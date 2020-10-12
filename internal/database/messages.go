@@ -227,3 +227,46 @@ func (d *ArrayDataset) Values() ([]interface{}, error) {
 func (d *ArrayDataset) Err() error {
 	return nil
 }
+
+type Query struct {
+	Ids   []int64
+	Start time.Time
+	End   time.Time
+}
+
+func (q *Query) FromURLParams(vals url.Values) error {
+	var (
+		err error
+	)
+	_ids, ok := vals["id"]
+	if !ok {
+		return errors.New("Query needs ids")
+	}
+	q.Ids = make([]int64, len(_ids))
+	for idx, _id := range _ids {
+		q.Ids[idx], err = strconv.ParseInt(_id, 10, 64)
+		if err != nil {
+			return fmt.Errorf("Invalid id %s: %w", _id, err)
+		}
+	}
+
+	if _start := vals.Get("start"); len(_start) > 0 {
+		q.Start, err = time.Parse(time.RFC3339, _start)
+		if err != nil {
+			return fmt.Errorf("Invalid start time %s: %w", _start, err)
+		}
+	} else {
+		return errors.New("Query needs a start time in RFC3339")
+	}
+
+	if _end := vals.Get("end"); len(_end) > 0 {
+		q.End, err = time.Parse(time.RFC3339, _end)
+		if err != nil {
+			return fmt.Errorf("Invalid end time %s: %w", _end, err)
+		}
+	} else {
+		q.End = time.Now()
+	}
+
+	return nil
+}

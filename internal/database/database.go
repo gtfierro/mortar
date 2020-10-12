@@ -3,11 +3,17 @@ package database
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/apache/arrow/go/arrow"
+	"github.com/apache/arrow/go/arrow/array"
+	"github.com/apache/arrow/go/arrow/ipc"
+	"github.com/apache/arrow/go/arrow/memory"
 
 	"github.com/gtfierro/mortar2/internal/config"
 	"github.com/gtfierro/mortar2/internal/logging"
@@ -18,6 +24,7 @@ type Database interface {
 	RunAsTransaction(context.Context, func(txn pgx.Tx) error) error
 	RegisterStream(context.Context, Stream) error
 	InsertHistoricalData(ctx context.Context, ds Dataset) error
+	ReadDataChunk(context.Context, io.Writer, *Query) error
 }
 
 type TimescaleDatabase struct {
@@ -194,4 +201,49 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 		log.Infof("Inserted %5d readings: %s", num, ds)
 	}
 	return err
+}
+
+func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	sch := arrow.NewSchema([]arrow.Field{
+		{Name: "time", Type: arrow.PrimitiveTypes.Date64, Nullable: false},
+		{Name: "value", Type: arrow.PrimitiveTypes.Float64, Nullable: false},
+		{Name: "id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
+	}, nil)
+	bldr := array.NewRecordBuilder(memory.DefaultAllocator, sch)
+	defer bldr.Release()
+
+	r_times := bldr.Field(0).(*array.Date64Builder)
+	r_values := bldr.Field(1).(*array.Float64Builder)
+	r_ids := bldr.Field(2).(*array.Int64Builder)
+
+	rows, err := db.pool.Query(ctx, `SELECT time, value, stream_id FROM data WHERE time>=$1 and time <=$2 and stream_id = ANY($3)`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
+	if err != nil {
+		return fmt.Errorf("Could not query %w", err)
+	}
+	for rows.Next() {
+		var (
+			t time.Time
+			v float64
+			i int64
+		)
+		if err := rows.Scan(&t, &v, &i); err != nil {
+			return fmt.Errorf("Could not query %w", err)
+		}
+		r_times.Append(arrow.Date64(t.UnixNano() / 1e6))
+		r_values.Append(v)
+		r_ids.Append(i)
+	}
+
+	rec := bldr.NewRecord()
+	defer rec.Release()
+
+	arrow_w := ipc.NewWriter(w, ipc.WithSchema(rec.Schema()))
+	if err := arrow_w.Write(rec); err != nil {
+		return fmt.Errorf("Could not write record %w", err)
+	}
+
+	return arrow_w.Close()
 }

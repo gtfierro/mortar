@@ -71,6 +71,7 @@ func (srv *Server) ServeHTTP() error {
 	mux.HandleFunc("/register_stream", srv.registerStream)
 	mux.HandleFunc("/insert_bulk", srv.insertHistoricalData)
 	mux.HandleFunc("/insert_streaming", srv.insertHistoricalDataStreaming)
+	mux.HandleFunc("/query", srv.readDataChunk)
 
 	server := &http.Server{
 		Addr:    srv.httpAddress,
@@ -199,6 +200,26 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 	err := <-errc
 	if err != nil {
 		log.Errorf("Problem inserting CSV file: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
+	log := logging.FromContext(srv.ctx)
+	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	defer cancel()
+
+	var query database.Query
+	if err := query.FromURLParams(r.URL.Query()); err != nil {
+		rerr := fmt.Errorf("Could not read source from params: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err := srv.db.ReadDataChunk(ctx, w, &query)
+	if err != nil {
+		log.Errorf("Problem querying data: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
