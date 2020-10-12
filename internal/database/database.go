@@ -208,14 +208,14 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	defer cancel()
 
 	sch := arrow.NewSchema([]arrow.Field{
-		{Name: "time", Type: arrow.PrimitiveTypes.Date64, Nullable: false},
+		{Name: "time", Type: arrow.FixedWidthTypes.Timestamp_ns, Nullable: false},
 		{Name: "value", Type: arrow.PrimitiveTypes.Float64, Nullable: false},
 		{Name: "id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
 	}, nil)
 	bldr := array.NewRecordBuilder(memory.DefaultAllocator, sch)
 	defer bldr.Release()
 
-	r_times := bldr.Field(0).(*array.Date64Builder)
+	r_times := bldr.Field(0).(*array.TimestampBuilder)
 	r_values := bldr.Field(1).(*array.Float64Builder)
 	r_ids := bldr.Field(2).(*array.Int64Builder)
 
@@ -232,7 +232,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		if err := rows.Scan(&t, &v, &i); err != nil {
 			return fmt.Errorf("Could not query %w", err)
 		}
-		r_times.Append(arrow.Date64(t.UnixNano() / 1e6))
+		r_times.Append(arrow.Timestamp(t.UnixNano()))
 		r_values.Append(v)
 		r_ids.Append(i)
 	}
