@@ -146,7 +146,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 
 	// TODO: does dataset need to be streamed? (probably)
 	// TODO: how to insert into historical data --- need to disable compression?
-	num := 0
+	var num int64 = 0
 	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
 		// check valid stream
 		row := txn.QueryRow(ctx, `SELECT id FROM streams WHERE source=$1 AND name=$2`, ds.GetSource(), ds.GetName())
@@ -156,13 +156,35 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 			return fmt.Errorf("No such stream (SourceName: %s, Name: %s): %w", ds.GetSource(), ds.GetName(), err)
 		}
 
-		for rdg := range ds.GetReadings() {
-			_, err := txn.Exec(ctx, `INSERT INTO data(time, stream_id, value) VALUES($1, $2, $3)  ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value;`, rdg.Time, stream_id, rdg.Value)
-			if err != nil {
-				return fmt.Errorf("Cannot insert reading %v for id %d: %w", rdg, stream_id, err)
-			}
-			num += 1
+		// TODO: use jackx CopyFrom, https://godoc.org/github.com/jackc/pgx#CopyFromSource
+		ds.SetId(stream_id)
+		_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
+		if err != nil {
+			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
 		}
+
+		num, err = txn.CopyFrom(ctx, pgx.Identifier{"datat"}, []string{"time", "stream_id", "value"}, ds)
+		if err != nil {
+			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+		}
+
+		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
+		if err != nil {
+			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+		}
+
+		_, err = txn.Exec(ctx, "DROP TABLE datat")
+		if err != nil {
+			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+		}
+
+		//for rdg := range ds.GetReadings() {
+		//	_, err := txn.Exec(ctx, `INSERT INTO data(time, stream_id, value) VALUES($1, $2, $3)  ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value;`, rdg.Time, stream_id, rdg.Value)
+		//	if err != nil {
+		//		return fmt.Errorf("Cannot insert reading %v for id %d: %w", rdg, stream_id, err)
+		//	}
+		//	num++
+		//}
 
 		return nil
 

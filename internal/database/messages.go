@@ -107,6 +107,12 @@ type Dataset interface {
 	GetSource() string
 	GetName() string
 	GetReadings() chan Reading
+	SetId(int)
+
+	// for CopyFromSource
+	Next() bool
+	Values() ([]interface{}, error)
+	Err() error
 }
 
 type StreamingDataset struct {
@@ -114,6 +120,7 @@ type StreamingDataset struct {
 	Name       string
 	id         int
 	Readings   chan Reading
+	current    *Reading
 }
 
 func NewStreamingDataset(source string, name string, c chan Reading) *StreamingDataset {
@@ -121,9 +128,15 @@ func NewStreamingDataset(source string, name string, c chan Reading) *StreamingD
 		SourceName: source,
 		Name:       name,
 		Readings:   c,
+		current:    nil,
+		id:         -1,
 	}
 
 	return ds
+}
+
+func (d *StreamingDataset) SetId(id int) {
+	d.id = id
 }
 
 func (d *StreamingDataset) String() string {
@@ -142,11 +155,33 @@ func (d *StreamingDataset) GetReadings() chan Reading {
 	return d.Readings
 }
 
+// implementing https://godoc.org/github.com/jackc/pgx#CopyFromSource
+func (d *StreamingDataset) Next() bool {
+	rdg, more := <-d.Readings
+	if more {
+		d.current = &rdg
+		return d.current != nil
+	}
+	return false
+}
+
+func (d *StreamingDataset) Values() ([]interface{}, error) {
+	if d.id == -1 {
+		return nil, errors.New("Need to set ID")
+	}
+	return []interface{}{d.current.Time, d.id, d.current.Value}, nil
+}
+
+func (d *StreamingDataset) Err() error {
+	return nil
+}
+
 type ArrayDataset struct {
 	SourceName string
 	Name       string
 	id         int
 	Readings   []Reading
+	idx        int
 }
 
 func (d *ArrayDataset) String() string {
@@ -170,4 +205,25 @@ func (d *ArrayDataset) GetReadings() chan Reading {
 		close(c)
 	}()
 	return c
+}
+
+func (d *ArrayDataset) SetId(id int) {
+	d.id = id
+}
+
+func (d *ArrayDataset) Next() bool {
+	d.idx++
+	return d.idx < len(d.Readings)
+}
+
+func (d *ArrayDataset) Values() ([]interface{}, error) {
+	if d.id == -1 {
+		return nil, errors.New("Need to set ID")
+	}
+	rdg := d.Readings[d.idx]
+	return []interface{}{rdg.Time, d.id, rdg.Value}, nil
+}
+
+func (d *ArrayDataset) Err() error {
+	return nil
 }
