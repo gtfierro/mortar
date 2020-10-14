@@ -25,6 +25,7 @@ type Database interface {
 	RegisterStream(context.Context, Stream) error
 	InsertHistoricalData(ctx context.Context, ds Dataset) error
 	ReadDataChunk(context.Context, io.Writer, *Query) error
+	AddTriples(context.Context, TripleDataset) error
 }
 
 type TimescaleDatabase struct {
@@ -246,4 +247,44 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	}
 
 	return arrow_w.Close()
+}
+
+func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	log := logging.FromContext(ctx)
+	if err := checkTripleDataset(ds); err != nil {
+		return fmt.Errorf("Cannot handle invalid dataset: %w", err)
+	}
+
+	var num int64 = 0
+
+	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
+		_, err := txn.Exec(ctx, "CREATE TEMP TABLE triplet(source TEXT, origin TEXT, time TIMESTAMPTZ, s TEXT, p TEXT, o TEXT)")
+		if err != nil {
+			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+		}
+
+		num, err = txn.CopyFrom(ctx, pgx.Identifier{"triplet"}, []string{"source", "origin", "time", "s", "p", "o"}, ds)
+		if err != nil {
+			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+		}
+
+		_, err = txn.Exec(ctx, "INSERT INTO triples SELECT * FROM triplet ON CONFLICT (source, origin, time, s, p, o) DO NOTHING")
+		if err != nil {
+			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+		}
+
+		_, err = txn.Exec(ctx, "DROP TABLE triplet")
+		if err != nil {
+			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+		}
+
+		return nil
+	})
+	if err == nil {
+		log.Infof("Inserted %5d triples", num)
+	}
+	return err
 }

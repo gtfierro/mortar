@@ -67,3 +67,14 @@ func checkDataset(d Dataset) error {
 
 	return nil
 }
+
+func checkTripleDataset(d TripleDataset) error {
+	if d == nil {
+		return errors.New("Dataset is null")
+	} else if len(d.GetSource()) == 0 {
+		return errors.New("SourceName is null")
+	} else if d.GetTime().Unix() == 0 {
+		return errors.New("Time is invalid")
+	}
+	return nil
+}

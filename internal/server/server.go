@@ -13,6 +13,7 @@ import (
 	"github.com/gtfierro/mortar2/internal/config"
 	"github.com/gtfierro/mortar2/internal/database"
 	"github.com/gtfierro/mortar2/internal/logging"
+	"github.com/knakk/rdf"
 )
 
 type Server struct {
@@ -71,6 +72,7 @@ func (srv *Server) ServeHTTP() error {
 	mux.HandleFunc("/register_stream", srv.registerStream)
 	mux.HandleFunc("/insert_bulk", srv.insertHistoricalData)
 	mux.HandleFunc("/insert_streaming", srv.insertHistoricalDataStreaming)
+	mux.HandleFunc("/insert_triple_file", srv.insertTriplesFromFile)
 	mux.HandleFunc("/query", srv.readDataChunk)
 
 	server := &http.Server{
@@ -116,6 +118,7 @@ func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) 
 
 	ctx, cancel := context.WithTimeout(srv.ctx, 5*time.Minute)
 	defer cancel()
+	defer r.Body.Close()
 
 	var ds database.ArrayDataset
 	if err := json.NewDecoder(r.Body).Decode(&ds); err != nil {
@@ -135,6 +138,7 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 	log := logging.FromContext(srv.ctx)
 	ctx, cancel := context.WithTimeout(srv.ctx, 10*time.Minute)
 	defer cancel()
+	defer r.Body.Close()
 
 	var (
 		rdg     database.Reading
@@ -208,6 +212,7 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
 	defer cancel()
+	defer r.Body.Close()
 
 	var query database.Query
 	if err := query.FromURLParams(r.URL.Query()); err != nil {
@@ -220,6 +225,30 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	err := srv.db.ReadDataChunk(ctx, w, &query)
 	if err != nil {
 		log.Errorf("Problem querying data: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (srv *Server) insertTriplesFromFile(w http.ResponseWriter, r *http.Request) {
+	log := logging.FromContext(srv.ctx)
+	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	defer cancel()
+	defer r.Body.Close()
+
+	var tripSrc database.TripleSource
+	if err := tripSrc.FromURLParams(r.URL.Query()); err != nil {
+		rerr := fmt.Errorf("Could not read source from params: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusBadRequest)
+		return
+	}
+
+	dec := rdf.NewTripleDecoder(r.Body, tripSrc.Format)
+	ds := database.NewStreamingTripleDataset(tripSrc.Source, tripSrc.Origin, time.Now(), dec)
+
+	err := srv.db.AddTriples(ctx, ds)
+	if err != nil {
+		log.Errorf("Problem inserting triples: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

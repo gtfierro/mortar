@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/knakk/rdf"
 )
 
 // Stream holds metadata associated with a timeseries source
@@ -268,5 +272,127 @@ func (q *Query) FromURLParams(vals url.Values) error {
 		q.End = time.Now()
 	}
 
+	return nil
+}
+
+type TripleSource struct {
+	Source string
+	Origin string
+	Format rdf.Format
+	Time   time.Time
+}
+
+func (ts *TripleSource) FromURLParams(vals url.Values) error {
+	var err error
+	// mandatory parameters
+	if source := vals.Get("source"); len(source) > 0 {
+		ts.Source = source
+	} else {
+		return errors.New("Params lacks 'source'")
+	}
+	if origin := vals.Get("origin"); len(origin) > 0 {
+		ts.Origin = origin
+	} else {
+		return errors.New("Params lacks 'origin'")
+	}
+
+	// optional
+	ts.Format = rdf.Turtle
+	if _format := vals.Get("format"); len(_format) > 0 {
+		switch strings.ToLower(_format) {
+		case "ntriples", "n3":
+			ts.Format = rdf.NTriples
+		case "turtle", "ttl":
+			ts.Format = rdf.Turtle
+		case "xml", "rdfxml":
+			ts.Format = rdf.RDFXML
+		}
+	}
+
+	if _time := vals.Get("time"); len(_time) > 0 {
+		if ts.Time, err = time.Parse(time.RFC3339, _time); err != nil {
+			return fmt.Errorf("Invalid timestamp %s: %w", _time, err)
+		}
+	}
+
+	return nil
+}
+
+type TripleDataset interface {
+	GetSource() string
+	GetOrigin() string
+	GetTime() time.Time
+	GetTriples() chan rdf.Triple
+
+	// for CopyFromSource
+	Next() bool
+	Values() ([]interface{}, error)
+	Err() error
+}
+
+type StreamingTripleDataset struct {
+	dec     rdf.TripleDecoder
+	source  string
+	origin  string
+	time    time.Time
+	current *rdf.Triple
+}
+
+func NewStreamingTripleDataset(source, origin string, t time.Time, dec rdf.TripleDecoder) *StreamingTripleDataset {
+	ds := &StreamingTripleDataset{
+		source:  source,
+		origin:  origin,
+		time:    t,
+		dec:     dec,
+		current: nil,
+	}
+	return ds
+}
+
+func (ds *StreamingTripleDataset) GetSource() string {
+	return ds.source
+}
+
+func (ds *StreamingTripleDataset) GetOrigin() string {
+	return ds.origin
+}
+
+func (ds *StreamingTripleDataset) GetTime() time.Time {
+	return ds.time
+}
+
+func (ds *StreamingTripleDataset) GetTriples() chan rdf.Triple {
+	c := make(chan rdf.Triple)
+	go func() {
+		for {
+			triple, err := ds.dec.Decode()
+			if err == io.EOF {
+				break
+			}
+			c <- triple
+		}
+		close(c)
+	}()
+	return c
+}
+
+func (ds *StreamingTripleDataset) Next() bool {
+	triple, err := ds.dec.Decode()
+	if err == io.EOF {
+		return false
+	}
+	ds.current = &triple
+	return ds.current != nil
+}
+
+func (ds *StreamingTripleDataset) Values() ([]interface{}, error) {
+	if ds.current == nil {
+		return nil, errors.New("No value")
+	}
+	return []interface{}{ds.source, ds.origin, ds.time, ds.current.Subj.Serialize(rdf.NTriples),
+		ds.current.Pred.Serialize(rdf.NTriples), ds.current.Obj.Serialize(rdf.NTriples)}, nil
+}
+
+func (ds *StreamingTripleDataset) Err() error {
 	return nil
 }

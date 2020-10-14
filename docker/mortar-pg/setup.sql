@@ -41,3 +41,27 @@ CREATE VIEW hourly_summaries
  FROM data
  GROUP BY stream_id, bucket;
 ALTER VIEW hourly_summaries SET (timescaledb.refresh_interval = '30 min');
+
+
+-- handle creation of triplestore
+-- TODO: maybe want 2 levels here: 1 is the source (site), the other is the 'origin' so we can have multiple sources that all change?
+
+CREATE TABLE triples(
+    source TEXT NOT NULL,
+    origin TEXT NOT NULL,
+    time TIMESTAMPTZ NOT NULL,
+    s TEXT NOT NULL,
+    p TEXT NOT NULL,
+    o TEXT NOT NULL
+);
+CREATE UNIQUE INDEX ON triples(source, origin, time, s, p, o);
+
+CREATE VIEW latest_triples AS
+    WITH lts AS (
+        SELECT source, origin, MAX(time) as time
+        FROM triples
+        GROUP BY source, origin
+    )
+    SELECT triples.source, s, p, o 
+    FROM triples
+    LEFT JOIN lts USING(source, origin, time);
