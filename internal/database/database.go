@@ -19,6 +19,7 @@ import (
 	"github.com/gtfierro/mortar2/internal/logging"
 )
 
+// Database defines the interface to the underlying data store
 type Database interface {
 	Close()
 	RunAsTransaction(context.Context, func(txn pgx.Tx) error) error
@@ -28,10 +29,12 @@ type Database interface {
 	AddTriples(context.Context, TripleDataset) error
 }
 
+// TimescaleDatabase is an implementation of Database for TimescaleDB
 type TimescaleDatabase struct {
 	pool *pgxpool.Pool
 }
 
+// NewTimescaleInsecureDefaults creates a new TimescaleDatabase with the insecure default settings: (listening localhost:5434 with user/pass = mortarchangeme/mortarpasswordchangeme)
 func NewTimescaleInsecureDefaults(ctx context.Context) (Database, error) {
 	cfg := &config.Config{
 		Database: config.Database{
@@ -45,24 +48,29 @@ func NewTimescaleInsecureDefaults(ctx context.Context) (Database, error) {
 	return NewTimescaleFromConfig(ctx, cfg)
 }
 
+// NewTimescaleFromConfig creates a new TimescaleDatabase with the given configuration
 func NewTimescaleFromConfig(ctx context.Context, cfg *config.Config) (Database, error) {
+	var err error
 
 	if err := checkConfig(cfg); err != nil {
 		return nil, fmt.Errorf("Invalid config to connect to database: %w", err)
 	}
 	// TODO: add the following config instead of a connection URL
-	// pool.SetMaxOpenConns(25)
-	// pool.SetMaxIdleConns(25)
-	// pool.SetConnMaxLifetime(5 * time.Minute)
-	db_connection_url := fmt.Sprintf("postgres://%s/%s?sslmode=disable&user=%s&password=%s&port=%s",
+	dbURL := fmt.Sprintf("postgres://%s/%s?sslmode=disable&user=%s&password=%s&port=%s",
 		cfg.Database.Host, cfg.Database.Database, cfg.Database.User, url.QueryEscape(cfg.Database.Password), cfg.Database.Port)
+	connCfg, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid config to connect to database: %w", err)
+	}
+	connCfg.MaxConns = 50
+	connCfg.MaxConnIdleTime = 15 * time.Minute
+	connCfg.MaxConnLifetime = 15 * time.Minute
 
 	log := logging.FromContext(ctx)
 	// loop until database is live
 	var pool *pgxpool.Pool
-	var err error
 	for {
-		pool, err = pgxpool.Connect(ctx, db_connection_url)
+		pool, err = pgxpool.ConnectConfig(ctx, connCfg)
 		if err != nil {
 			log.Warnf("Failed to connect to database (%s); retrying in 5 seconds", err.Error())
 			time.Sleep(5 * time.Second)
@@ -75,10 +83,12 @@ func NewTimescaleFromConfig(ctx context.Context, cfg *config.Config) (Database, 
 	}, nil
 }
 
+// Close shuts down the connections to the database
 func (db *TimescaleDatabase) Close() {
 	db.pool.Close()
 }
 
+// RunAsTransaction executes the provided function in a transaction; commits if the function returns nil, and aborts otherwise
 func (db *TimescaleDatabase) RunAsTransaction(ctx context.Context, f func(txn pgx.Tx) error) error {
 	// start transaction in a new pooled connection
 	conn, err := db.pool.Acquire(ctx)
