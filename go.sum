@@ -93,8 +93,12 @@ github.com/jackc/puddle v1.1.1/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dv
 github.com/jackc/puddle v1.1.2 h1:mpQEXihFnWGDy6X98EOTh81JYuxn7txby8ilJ3iIPGM=
 github.com/jackc/puddle v1.1.2/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/knakk/digest v0.0.0-20160404164910-fd45becddc49 h1:P6Mw09IOeKKS4klYhjzHzaEx2RcNshynjfDhzCQ8BoE=
+github.com/knakk/digest v0.0.0-20160404164910-fd45becddc49/go.mod h1:dQr9I8Xw26daWGE/crxUleRxmpFI5uhfedWqRNHHq0c=
 github.com/knakk/rdf v0.0.0-20190304171630-8521bf4c5042 h1:Vzdm5hdlLdpJOKK+hKtkV5u7xGZmNW6aUBjGcTfwx84=
 github.com/knakk/rdf v0.0.0-20190304171630-8521bf4c5042/go.mod h1:fYE0718xXI13XMYLc6iHtvXudfyCGMsZ9hxSM1Ommpg=
+github.com/knakk/sparql v0.0.0-20200914044602-05f8b3d450be h1:BF9WE8QaE+ZJopw3eqZ/jJj5c1ex6h4ct3qtgIQRqVY=
+github.com/knakk/sparql v0.0.0-20200914044602-05f8b3d450be/go.mod h1:vxUbHrxs7JHQF6LITj9Rp9yf2bqyz+5JZzPZkEkS3MA=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

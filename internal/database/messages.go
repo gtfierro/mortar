@@ -233,17 +233,28 @@ func (d *ArrayDataset) Err() error {
 }
 
 type Query struct {
-	Ids   []int64
-	Start time.Time
-	End   time.Time
+	Ids    []int64
+	Sparql string
+	Start  time.Time
+	End    time.Time
 }
 
 func (q *Query) FromURLParams(vals url.Values) error {
 	var (
 		err error
 	)
+
+	_sparql := vals.Get("sparql")
+	if len(_sparql) > 0 {
+		q.Sparql, err = url.QueryUnescape(_sparql)
+		if err != nil {
+			return fmt.Errorf("Invalid query '%s': %w", _sparql, err)
+		}
+	}
+	// TODO: sparql, err := url.QueryUnescape(q.Sparql)
+
 	_ids, ok := vals["id"]
-	if !ok {
+	if !ok && len(q.Sparql) == 0 {
 		return errors.New("Query needs ids")
 	}
 	q.Ids = make([]int64, len(_ids))

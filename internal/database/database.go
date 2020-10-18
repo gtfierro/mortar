@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/knakk/sparql"
 
 	"github.com/apache/arrow/go/arrow"
 	"github.com/apache/arrow/go/arrow/array"
@@ -217,6 +218,40 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+
+	// if a sparql query is provided, then execute it, join on 'streams' to get all of the ids
+	// implied by the query, and use those to determine the ids in the 'data' table
+	if len(q.Sparql) > 0 {
+		fmt.Println("SPARQL", q.Sparql)
+		repo, err := sparql.NewRepo("http://localhost:3030/query")
+		if err != nil {
+			panic(err)
+		}
+		res, err := repo.Query(q.Sparql)
+		if err != nil {
+			panic(err)
+		}
+		var uris []string
+		for _, row := range res.Results.Bindings {
+			for _, value := range row {
+				if value.Type == "uri" {
+					uris = append(uris, value.Value)
+				}
+			}
+		}
+		// get ids from the uris
+		rows, err := db.pool.Query(ctx, `SELECT id from streams WHERE name = ANY($1)`, uris)
+		if err != nil {
+			panic(err)
+		}
+		for rows.Next() {
+			var i int64
+			if err := rows.Scan(&i); err != nil {
+				return fmt.Errorf("Could not query %w", err)
+			}
+			q.Ids = append(q.Ids, i)
+		}
+	}
 
 	sch := arrow.NewSchema([]arrow.Field{
 		{Name: "time", Type: arrow.FixedWidthTypes.Timestamp_ns, Nullable: false},
