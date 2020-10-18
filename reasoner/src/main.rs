@@ -1,9 +1,16 @@
 use warp::Filter;
 use std::str;
+use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 use warp::http::Response;
+use tokio::time;
+use futures::channel::mpsc;
+use futures::{
+    select, future, join, pin_mut, stream, try_join, FutureExt, SinkExt, StreamExt, TryStreamExt,
+};
 use std::io::BufWriter;
 use rdf::{node::Node, uri::Uri};
-use tokio_postgres::{NoTls, Error};
+use tokio_postgres::{NoTls, Error, AsyncMessage};
 use oxigraph::sparql::{QueryOptions, QueryResults, QueryResultsFormat};
 use oxigraph::MemoryStore;
 use reasonable::manager::Manager;
@@ -19,6 +26,19 @@ const qfmt: &str = "PREFIX brick: <https://brickschema.org/schema/1.1/Brick#>
 
 fn with_db(store: MemoryStore) -> impl Filter<Extract = (MemoryStore,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || store.clone())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct EmbeddedTriple {
+    s: String,
+    p: String,
+    o: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct TripleEvent {
+    table: String,
+    action: String,
+    data: EmbeddedTriple
 }
 
 #[derive(Debug)]
@@ -46,15 +66,20 @@ async fn main() -> Result<(), Error> {
     println!("Loaded files");
 
     // Connect to the database.
-    let (client, connection) =
+    let (client, mut connection) =
         tokio_postgres::connect("host=localhost port=5434 dbname=mortar user=mortarchangeme password=mortarpasswordchangeme", NoTls).await?;
+
+    let (tx, mut rx) = mpsc::unbounded();
+    let stream = stream::poll_fn(move |cx| connection.poll_message(cx)).map_err(|e| panic!(e));
+    let connection = stream.forward(tx).map(|r| r.unwrap());
 
     // The connection object performs the actual communication with the database,
     // so spawn it off to run on its own.
     tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
-        }
+        connection.await;
+        // if let Err(e) = connection.await {
+        //     eprintln!("connection error: {}", e);
+        // }
     });
 
     let rows = client.query("SELECT s, p, o FROM latest_triples", &[]).await?;
@@ -66,6 +91,19 @@ async fn main() -> Result<(), Error> {
     }).collect();
     println!("triples: {}", v.len());
     mgr.add_triples(v);
+
+
+    // subscribe
+    client.execute("LISTEN events;", &[]).await?;
+
+    // let notifications = rx
+    //     .filter_map(|m| match m {
+    //             AsyncMessage::Notification(n) => future::ready(Some(n)),
+    //             _ => future::ready(None),
+    //         })
+    //     .collect::<Vec<_>>()
+    //     .await;
+
 
     // TODO: how to listen for changes?
     // 1) bootstrap content by querying PG table (using
@@ -90,7 +128,6 @@ async fn main() -> Result<(), Error> {
                 println!("query: {}", sparql);
                 let q = store.clone().prepare_query(&sparql, QueryOptions::default()).unwrap();
                 let res = q.exec().unwrap();
-                // let mut rows: Vec<Vec<String>> = Vec::new();
                 let mut resp: Vec<u8> = Vec::new();
                 if let QueryResults::Solutions(_) = res {
                     res.write(&mut resp, QueryResultsFormat::Json).unwrap();
@@ -103,34 +140,68 @@ async fn main() -> Result<(), Error> {
                         .body("No results".as_bytes().to_vec())
 
                 }
-                // match res {
-                //     QueryResults::Solutions(solutions) => {
-                //         let vars: Vec<String> = solutions
-                //             .variables()
-                //             .to_vec()
-                //             .iter()
-                //             .map(|t| t.to_string())
-                //             .collect();
-                //         for soln in solutions {
-                //             let vals = soln.unwrap();
-                //             let mut row: Vec<String> = Vec::new();
-                //             for idx in 0..vars.len() {
-                //                 if let Some(val) = vals.get(idx) {
-                //                     row.push(val.clone().to_string());
-                //                 }
-                //             }
-                //             rows.push(row);
-                //         }
-                //     }
-                //     QueryResults::Boolean(b) => rows.push(vec![format!("{}", b)]),
-                //     _ => {}
-                // };
-                // Ok(warp::reply::json(&rows))
+            });
+
+    let query2 = warp::path!("query")
+            .and(warp::body::content_length_limit(1024))
+            .and(warp::header::exact("content-type", "application/x-www-form-urlencoded"))
+            .and(warp::body::form())
+            .and(with_db(store.clone()))
+            .map(|m: HashMap<String, String>, store: MemoryStore| {
+                if let Some(query) = m.get("query") {
+                    let sparql = format!("{}{}", qfmt, query);
+                    println!("query: {}", sparql);
+                    let q = store.clone().prepare_query(&sparql, QueryOptions::default()).unwrap();
+                    let res = q.exec().unwrap();
+                    let mut resp: Vec<u8> = Vec::new();
+                    if let QueryResults::Solutions(_) = res {
+                        res.write(&mut resp, QueryResultsFormat::Json).unwrap();
+                        warp::http::Response::builder()
+                            .header("content-type", "application/json")
+                            .body(resp)
+                    } else {
+                        warp::http::Response::builder()
+                            .status(warp::http::StatusCode::INTERNAL_SERVER_ERROR)
+                            .body("No results".as_bytes().to_vec())
+
+                    }
+                } else {
+                    warp::http::Response::builder()
+                        .status(warp::http::StatusCode::INTERNAL_SERVER_ERROR)
+                        .body("Bad query".as_bytes().to_vec())
+
+                }
             });
 
     println!("Serving on 127.0.0.1:3030");
-    warp::serve(query)
-        .run(([127, 0, 0, 1], 3030))
-        .await;
+    tokio::spawn(
+        warp::serve(query2.or(query))
+            .run(([127, 0, 0, 1], 3030))
+    );
+
+    let mut trips: Vec<(Node, Node, Node)> = Vec::new();
+    let mut interval = time::interval(time::Duration::from_secs(10));
+    loop {
+        tokio::select! {
+            msg = rx.next() => {
+                if let Some(x) = msg {
+                    if let AsyncMessage::Notification(n) = x {
+                        let msg: TripleEvent = serde_json::from_str(n.payload()).unwrap();
+                        trips.push((parse_triple_term(&msg.data.s).unwrap(),
+                                    parse_triple_term(&msg.data.p).unwrap(),
+                                    parse_triple_term(&msg.data.o).unwrap()));
+                    }
+                }
+            },
+            _ = interval.tick() => {
+                if trips.len() > 0 {
+                    mgr.add_triples(trips.clone());
+                    println!("Integrated {}", trips.len());
+                    trips.clear();
+                }
+            }
+        }
+    }
+
     Ok(())
 }
