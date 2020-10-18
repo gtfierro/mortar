@@ -47,3 +47,7 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     depends_on:
       - mortar-pg
+  reasoner:
+    build: "./docker/reasoner"
+    ports:
+        - "3030:3030"
