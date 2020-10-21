@@ -233,10 +233,11 @@ func (d *ArrayDataset) Err() error {
 }
 
 type Query struct {
-	Ids    []int64
-	Sparql string
-	Start  time.Time
-	End    time.Time
+	Ids     []int64
+	Sources []string
+	Sparql  string
+	Start   time.Time
+	End     time.Time
 }
 
 func (q *Query) FromURLParams(vals url.Values) error {
@@ -282,6 +283,8 @@ func (q *Query) FromURLParams(vals url.Values) error {
 	} else {
 		q.End = time.Now()
 	}
+
+	q.Sources = vals["source"]
 
 	return nil
 }

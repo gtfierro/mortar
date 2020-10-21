@@ -216,7 +216,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 }
 
 func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
 	// if a sparql query is provided, then execute it, join on 'streams' to get all of the ids
@@ -240,7 +240,12 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 			}
 		}
 		// get ids from the uris
-		rows, err := db.pool.Query(ctx, `SELECT id from streams WHERE name = ANY($1)`, uris)
+		var rows pgx.Rows
+		if len(q.Sources) > 0 {
+			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE name = ANY($1) AND source = ANY($2)`, uris, q.Sources)
+		} else {
+			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE name = ANY($1)`, uris)
+		}
 		if err != nil {
 			panic(err)
 		}

@@ -210,7 +210,7 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 
 func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(srv.ctx, 5*time.Second)
 	defer cancel()
 	defer r.Body.Close()
 
