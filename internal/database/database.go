@@ -223,7 +223,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	// implied by the query, and use those to determine the ids in the 'data' table
 	if len(q.Sparql) > 0 {
 		fmt.Println("SPARQL", q.Sparql)
-		repo, err := sparql.NewRepo("http://localhost:3030/query")
+		repo, err := sparql.NewRepo("http://reasoner:3030/query")
 		if err != nil {
 			panic(err)
 		}

@@ -3,20 +3,12 @@ FROM golang AS builder
 
 WORKDIR /app
 
-COPY . .
-
-# RUN go install \
-#       github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
-#       github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
-#       github.com/golang/protobuf/protoc-gen-go
-# 
-# RUN apt update && apt install -y \
-#       protobuf-compiler \
-#       python3-pip
-#
-# RUN pip3 install grpcio-tools
-
-RUN make mortar-server
+COPY main.go .
+COPY go.mod .
+COPY go.sum .
+COPY internal internal
+COPY Makefile .
+RUN go build -o mortar-server
 
 # Runtime image
 FROM ubuntu:19.10
