@@ -1,18 +1,17 @@
 use warp::Filter;
+use std::env;
 use std::str;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use warp::http::Response;
 use tokio::time;
 use futures::channel::mpsc;
 use futures::{
-    select, future, join, pin_mut, stream, try_join, FutureExt, SinkExt, StreamExt, TryStreamExt,
+    stream, FutureExt, StreamExt, TryStreamExt,
 };
-use std::io::BufWriter;
 use rdf::{node::Node, uri::Uri};
 use tokio_postgres::{NoTls, Error, AsyncMessage};
 use oxigraph::sparql::{QueryOptions, QueryResults, QueryResultsFormat};
-use oxigraph::MemoryStore;
+use oxigraph::SledStore;
 use reasonable::manager::Manager;
 
 #[allow(non_upper_case_globals)]
@@ -24,7 +23,7 @@ const qfmt: &str = "PREFIX brick: <https://brickschema.org/schema/1.1/Brick#>
     PREFIX qudt: <http://qudt.org/schema/qudt/>
     ";
 
-fn with_db(store: MemoryStore) -> impl Filter<Extract = (MemoryStore,), Error = std::convert::Infallible> + Clone {
+fn with_db(store: SledStore) -> impl Filter<Extract = (SledStore,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || store.clone())
 }
 
@@ -66,8 +65,15 @@ async fn main() -> Result<(), Error> {
     println!("Loaded files");
 
     // Connect to the database.
+    let connstr = format!("host={} port={} dbname={} user={} password={}",
+         env::var("MORTAR_DB_HOST").unwrap_or("localhost".to_string()),
+         env::var("MORTAR_DB_PORT").unwrap_or("5432".to_string()),
+         env::var("MORTAR_DB_DATABASE").unwrap_or("mortar".to_string()),
+         env::var("MORTAR_DB_USER").unwrap_or("mortarchangeme".to_string()),
+         env::var("MORTAR_DB_PASSWORD").unwrap_or("mortarpasswordchangeme".to_string())
+    );
     let (client, mut connection) =
-        tokio_postgres::connect("host=localhost port=5434 dbname=mortar user=mortarchangeme password=mortarpasswordchangeme", NoTls).await?;
+        tokio_postgres::connect(&connstr, NoTls).await?;
 
     let (tx, mut rx) = mpsc::unbounded();
     let stream = stream::poll_fn(move |cx| connection.poll_message(cx)).map_err(|e| panic!(e));
@@ -82,6 +88,7 @@ async fn main() -> Result<(), Error> {
         // }
     });
 
+    // TODO: use source name in latest triples to do this for each graph
     let rows = client.query("SELECT s, p, o FROM latest_triples", &[]).await?;
     let v: Vec<(Node, Node, Node)> = rows.iter().filter_map(|row| {
         let (s, p, o): (&str, &str, &str) = (row.get(0), row.get(1), row.get(2));
@@ -96,23 +103,6 @@ async fn main() -> Result<(), Error> {
     // subscribe
     client.execute("LISTEN events;", &[]).await?;
 
-    // let notifications = rx
-    //     .filter_map(|m| match m {
-    //             AsyncMessage::Notification(n) => future::ready(Some(n)),
-    //             _ => future::ready(None),
-    //         })
-    //     .collect::<Vec<_>>()
-    //     .await;
-
-
-    // TODO: how to listen for changes?
-    // 1) bootstrap content by querying PG table (using
-    //    https://docs.rs/tokio-postgres/0.5.5/tokio_postgres/)
-    // 2) maybe use LISTEN/NOTIFY
-    //    (https://citizen428.net/blog/asynchronous-notifications-in-postgres/). Would just need to
-    //    execute the `LISTEN channame;` in a client and then do client.notifications() or
-    //    something like that
-
     let query = warp::path!("query")
             .and(warp::body::content_length_limit(1024))
             .and(
@@ -123,7 +113,7 @@ async fn main() -> Result<(), Error> {
                 }),
             )
             .and(with_db(store.clone()))
-            .map(|query: String, store: MemoryStore| {
+            .map(|query: String, store: SledStore| {
                 let sparql = format!("{}{}", qfmt, query);
                 println!("query: {}", sparql);
                 let q = store.clone().prepare_query(&sparql, QueryOptions::default()).unwrap();
@@ -147,7 +137,7 @@ async fn main() -> Result<(), Error> {
             .and(warp::header::exact("content-type", "application/x-www-form-urlencoded"))
             .and(warp::body::form())
             .and(with_db(store.clone()))
-            .map(|m: HashMap<String, String>, store: MemoryStore| {
+            .map(|m: HashMap<String, String>, store: SledStore| {
                 if let Some(query) = m.get("query") {
                     let sparql = format!("{}{}", qfmt, query);
                     println!("query: {}", sparql);
@@ -173,10 +163,11 @@ async fn main() -> Result<(), Error> {
                 }
             });
 
-    println!("Serving on 127.0.0.1:3030");
+    // TODO: accept postgres stuff as env variables
+    println!("Serving on 0.0.0.0:3030");
     tokio::spawn(
         warp::serve(query2.or(query))
-            .run(([127, 0, 0, 1], 3030))
+            .run(([0, 0, 0, 0], 3030))
     );
 
     let mut trips: Vec<(Node, Node, Node)> = Vec::new();
@@ -202,6 +193,4 @@ async fn main() -> Result<(), Error> {
             }
         }
     }
-
-    Ok(())
 }

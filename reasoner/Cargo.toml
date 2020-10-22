@@ -12,7 +12,7 @@ reasonable = { path = "../../../reasonable/" }
 # tokio = { version = "0.2", versions = ["full"] }
 tokio = { version = "0.2", features = ["macros", "time"] }
 warp = "0.2"
-oxigraph = "0.1"
+oxigraph = { version="0.1", features=["sled"] }
 bytes = "0.5.6"
 tokio-postgres = "0.5.5"
 rdf = "0.1.4"
