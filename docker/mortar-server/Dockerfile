@@ -7,7 +7,6 @@ COPY main.go .
 COPY go.mod .
 COPY go.sum .
 COPY internal internal
-COPY Makefile .
 RUN go build -o mortar-server
 
 # Runtime image

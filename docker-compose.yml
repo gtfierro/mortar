@@ -49,7 +49,9 @@ services:
     depends_on:
       - mortar-pg
   reasoner:
-    build: "./docker/reasoner"
+    build:
+      context: .
+      dockerfile: "./docker/reasoner/Dockerfile"
     environment:
       - MORTAR_DB_HOST=mortar-pg
       - MORTAR_DB_PORT=5432
