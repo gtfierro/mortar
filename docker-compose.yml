@@ -1,8 +1,9 @@
 version: '3'
 
 services:
-  mortar-pg:
-    build: "./docker/mortar-pg"
+  pg:
+    build: "./docker/pg"
+    image: "mortar/pg"
     ports:
       - "5434:5432"
     volumes:
@@ -11,13 +12,14 @@ services:
     build:
       context: .
       dockerfile: "./docker/mortar-server/Dockerfile"
+    image: "mortar/server2"
     depends_on:
-      - "mortar-pg"
+      - "pg"
       - "reasoner"
     environment:
       - MORTAR_HTTP_ADDRESS=0.0.0.0
       - MORTAR_HTTP_PORT=5001
-      - MORTAR_DB_HOST=mortar-pg
+      - MORTAR_DB_HOST=pg
       - MORTAR_DB_PORT=5432
       - MORTAR_DB_DATABASE=mortar
       - MORTAR_DB_USER=mortarchangeme
@@ -47,13 +49,13 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     depends_on:
-      - mortar-pg
+      - pg
   reasoner:
     build:
       context: .
       dockerfile: "./docker/reasoner/Dockerfile"
     environment:
-      - MORTAR_DB_HOST=mortar-pg
+      - MORTAR_DB_HOST=pg
       - MORTAR_DB_PORT=5432
       - MORTAR_DB_DATABASE=mortar
       - MORTAR_DB_USER=mortarchangeme
@@ -61,4 +63,4 @@ services:
     ports:
       - "3030:3030"
     depends_on:
-      - mortar-pg
+      - pg
