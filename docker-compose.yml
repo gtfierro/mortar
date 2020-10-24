@@ -54,6 +54,7 @@ services:
     build:
       context: .
       dockerfile: "./docker/reasoner/Dockerfile"
+    image: "mortar/reasoner"
     environment:
       - MORTAR_DB_HOST=pg
       - MORTAR_DB_PORT=5432
