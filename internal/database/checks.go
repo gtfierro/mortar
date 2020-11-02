@@ -21,6 +21,8 @@ func checkConfig(cfg *config.Config) error {
 		return errors.New("Database.Password is empty")
 	} else if len(cfg.Database.Port) == 0 {
 		return errors.New("Database.Port is empty")
+	} else if len(cfg.Reasoner.Address) == 0 {
+		return errors.New("Reasoner.Address is empty")
 	}
 	return nil
 }

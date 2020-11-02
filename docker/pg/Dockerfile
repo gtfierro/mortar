@@ -27,7 +27,7 @@ ENV PGDATA=/data/
 # Add timescale
 RUN sh -c "echo 'deb https://packagecloud.io/timescale/timescaledb/debian/ `lsb_release -c -s` main' > /etc/apt/sources.list.d/timescaledb.list"
 RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | apt-key add -
-RUN apt-get update && apt-get install -y timescaledb-postgresql-12
+RUN apt-get update && apt-get install -y timescaledb-2-postgresql-12
 RUN timescaledb-tune --quiet --yes --conf-path=/data/postgresql.conf
 
 # Add initialization scripts

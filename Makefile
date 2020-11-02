@@ -9,4 +9,4 @@ reasoner: $(RS_SRC_FILES)
 	cp reasoner/target/release/reasoner docker/reasoner/.
 
 run-server: mortar-server
-	MORTAR_HTTP_ADDRESS=localhost MORTAR_HTTP_PORT=5001 MORTAR_DB_HOST=localhost MORTAR_DB_PORT=5434 MORTAR_DB_USER=mortarchangeme MORTAR_DB_PASSWORD=mortarpasswordchangeme MORTAR_DB_DATABASE=mortar ./mortar-server
+	MORTAR_HTTP_ADDRESS=localhost MORTAR_HTTP_PORT=5001 MORTAR_DB_HOST=localhost MORTAR_DB_PORT=5434 MORTAR_DB_USER=mortarchangeme MORTAR_DB_PASSWORD=mortarpasswordchangeme MORTAR_DB_DATABASE=mortar MORTAR_REASONER_ADDRESS=localhost:3030 ./mortar-server

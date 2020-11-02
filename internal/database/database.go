@@ -32,7 +32,8 @@ type Database interface {
 
 // TimescaleDatabase is an implementation of Database for TimescaleDB
 type TimescaleDatabase struct {
-	pool *pgxpool.Pool
+	pool            *pgxpool.Pool
+	reasonerAddress string
 }
 
 // NewTimescaleInsecureDefaults creates a new TimescaleDatabase with the insecure default settings: (listening localhost:5434 with user/pass = mortarchangeme/mortarpasswordchangeme)
@@ -44,6 +45,9 @@ func NewTimescaleInsecureDefaults(ctx context.Context) (Database, error) {
 			User:     "mortarchangeme",
 			Password: "mortarpasswordchangeme",
 			Port:     "5434",
+		},
+		Reasoner: config.Reasoner{
+			Address: "localhost:3030",
 		},
 	}
 	return NewTimescaleFromConfig(ctx, cfg)
@@ -80,7 +84,8 @@ func NewTimescaleFromConfig(ctx context.Context, cfg *config.Config) (Database, 
 	}
 	log.Infof("Connected to postgres at %s", cfg.Database.Host)
 	return &TimescaleDatabase{
-		pool: pool,
+		pool:            pool,
+		reasonerAddress: cfg.Reasoner.Address,
 	}, nil
 }
 
@@ -223,7 +228,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	// implied by the query, and use those to determine the ids in the 'data' table
 	if len(q.Sparql) > 0 {
 		fmt.Println("SPARQL", q.Sparql)
-		repo, err := sparql.NewRepo("http://reasoner:3030/query")
+		repo, err := sparql.NewRepo(fmt.Sprintf("http://%s/query", db.reasonerAddress))
 		if err != nil {
 			panic(err)
 		}

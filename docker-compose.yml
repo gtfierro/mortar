@@ -15,7 +15,6 @@ services:
     image: "mortar/server2"
     depends_on:
       - "pg"
-      - "reasoner"
     environment:
       - MORTAR_HTTP_ADDRESS=0.0.0.0
       - MORTAR_HTTP_PORT=5001
@@ -24,6 +23,7 @@ services:
       - MORTAR_DB_DATABASE=mortar
       - MORTAR_DB_USER=mortarchangeme
       - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+      - MORTAR_REASONER_ADDRESS=reasoner:3030
     ports:
       - "5001:5001"
         # - "2112:2112"
@@ -65,3 +65,4 @@ services:
       - "3030:3030"
     depends_on:
       - pg
+      - server

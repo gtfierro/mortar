@@ -22,7 +22,11 @@ ALTER TABLE  data
   SET (timescaledb.compress,
       -- timescaledb.compress_orderby = 'time DESC',
       timescaledb.compress_segmentby = 'stream_id');
-SELECT add_compress_chunks_policy('data', INTERVAL '14 days');
+-- Timescale 1.x
+-- SELECT add_compress_chunks_policy('data', INTERVAL '14 days');
+
+-- Timescale 2.x
+SELECT add_compression_policy('data', INTERVAL '14 days');
 
 CREATE VIEW unified AS 
     SELECT time, value, stream_id, name, source, units, brick_uri, brick_class
@@ -30,7 +34,8 @@ CREATE VIEW unified AS
 
 
 -- https://docs.timescale.com/latest/using-timescaledb/continuous-aggregates
-CREATE VIEW hourly_summaries
+-- use MATERIALIZED for Timescale 2.x
+CREATE MATERIALIZED VIEW hourly_summaries
  WITH (timescaledb.continuous) AS
  SELECT stream_id,
         time_bucket(INTERVAL '1 hour', time) AS bucket,
@@ -40,12 +45,17 @@ CREATE VIEW hourly_summaries
         AVG(value) as mean
  FROM data
  GROUP BY stream_id, bucket;
-ALTER VIEW hourly_summaries SET (timescaledb.refresh_interval = '30 min');
+-- timescale 1.x
+-- ALTER VIEW hourly_summaries SET (timescaledb.refresh_interval = '30 min');
+
+-- timescale 2.x
+SELECT add_continuous_aggregate_policy('hourly_summaries',
+    start_offset => NULL,
+    end_offset => INTERVAL '1 h',
+    schedule_interval => INTERVAL '1 h');
 
 
 -- handle creation of triplestore
--- TODO: maybe want 2 levels here: 1 is the source (site), the other is the 'origin' so we can have multiple sources that all change?
-
 CREATE TABLE triples(
     source TEXT NOT NULL,
     origin TEXT NOT NULL,

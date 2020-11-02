@@ -9,6 +9,7 @@ type Config struct {
 	//GRPC     GRPC
 	HTTP     HTTP
 	Database Database
+	Reasoner Reasoner
 }
 
 // Database store database configuration information (currently just for postgres)
@@ -18,6 +19,11 @@ type Database struct {
 	User     string
 	Password string
 	Port     string
+}
+
+// Reasoner stores configuration for talking to the reasoner
+type Reasoner struct {
+	Address string
 }
 
 // type GRPC struct {
@@ -48,6 +54,9 @@ func NewFromEnv() *Config {
 			User:     os.Getenv("MORTAR_DB_USER"),
 			Password: os.Getenv("MORTAR_DB_PASSWORD"),
 			Port:     os.Getenv("MORTAR_DB_PORT"),
+		},
+		Reasoner: Reasoner{
+			Address: os.Getenv("MORTAR_REASONER_ADDRESS"),
 		},
 	}
 }
