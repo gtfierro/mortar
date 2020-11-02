@@ -1,0 +1,15 @@
+# Table of content
+# Learn more at https://jupyterbook.org/customize/toc.html
+#
+- file: intro
+- file: datamodel/overview
+  expand_sections: true
+  sections:
+    - file: datamodel/brick
+    - file: datamodel/timeseries
+    - file: datamodel/mortar
+- file: api/overview
+  expand_sections: true
+  sections:
+    - file: api/inserting
+    - file: api/querying

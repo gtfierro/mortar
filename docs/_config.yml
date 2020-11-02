@@ -1,0 +1,34 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: 'Mortar: An Open Dataset and Testbed for Reproducible Building Analytics'
+author: Gabe Fierro
+logo: logo.png
+
+parse:
+  myst_extended_syntax: true
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: auto
+
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: book.tex
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
+
+repository:
+  url                       : https://github.com/gtfierro/mortar
+  path_to_book              : docs
+  branch                    : master  # W
+
+launch_buttons:
+  binderhub_url: "https://mybinder.org"  # The URL for your BinderHub (e.g., https://mybinder.org)
+  thebe        : true
