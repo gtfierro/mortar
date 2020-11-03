@@ -27,16 +27,6 @@ POSTing data to Mortar is recommended for small or incremental updates, on the o
 
 ```{code-cell}
 import requests
-from datetime import datetime, timedelta
-import random
-
-def generate_n(n):
-    st = datetime.now()
-    return [
-        [(st + timedelta(seconds=x)).strftime("%Y-%m-%dT%H:%M:%SZ%Z"),
-         random.randint(0, 100)]
-        for x in range(n)
-    ]
  
 stream1 = {
     "SourceName": "testsource1",
@@ -44,11 +34,16 @@ stream1 = {
     "Name": "stream1"
 }
 
-resp = requests.post("http://localhost:5001/register_stream", json=stream1)
+resp = requests.post("https://happy-turkey-56.loca.lt/register_stream", json=stream1)
 if not resp.ok:
     print(resp.content)
 
-readings = generate_n(5000)
+readings = [
+  ("2020-11-03T00:00:00Z", 71.0),
+  ("2020-11-03T00:01:00Z", 72),
+  ("2020-11-03T00:02:00Z", 73.0),
+  ("2020-11-03T00:03:00Z", 72.5),
+]
 ds = {
     "SourceName": "testsource1",
     "Name": "stream1",
