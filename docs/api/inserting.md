@@ -21,11 +21,11 @@ Mortar (v2) described in this document does not yet support securing the ability
 
 ## Inserting with HTTP POST
 
-POSTing data to Mortar is recommended for small or incremental updates, on the order of 1000 readings or less
+POSTing data to Mortar is recommended for small or incremental updates, on the order of 1000 readings or less. 
 
 **TODO: check; it might have only loaded in 4999 records?**
 
-```{code-cell}
+```{code-cell} Python
 import requests
  
 stream1 = {
