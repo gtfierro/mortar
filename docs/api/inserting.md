@@ -50,7 +50,7 @@ ds = {
     "Readings": readings
 }
 
-resp = requests.post('http://localhost:5001/insert_bulk', json=ds)
+resp = requests.post('https://happy-turkey-56.loca.lt/insert_bulk', json=ds)
 if not resp.ok:
     print(resp.content)
 ```
