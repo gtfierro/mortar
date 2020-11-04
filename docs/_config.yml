@@ -1,9 +1,9 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
 
-title: 'Mortar: An Open Dataset and Testbed for Reproducible Building Analytics'
+title: 'Mortar: A Platform for Reproducible Building Analytics'
 author: Gabe Fierro
-logo: logo.png
+# logo: logo.png
 
 parse:
   myst_extended_syntax: true
