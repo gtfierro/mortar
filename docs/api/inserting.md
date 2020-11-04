@@ -44,7 +44,7 @@ stream1 = {
     "BrickClass": "https://brickschema.org/ontology/1.1/Brick#Air_Temperature_Sensor"
 }
 
-resp = requests.post("http://localhost:5001/register_stream", json=stream1)
+resp = requests.post("http://mortar-server:5001/register_stream", json=stream1)
 if not resp.ok:
     print(resp.content)
 print("Registered!")
@@ -86,7 +86,7 @@ ds = {
     "Readings": readings
 }
 
-resp = requests.post('http://localhost:5001/insert_bulk', json=ds)
+resp = requests.post('http://mortar-server:5001/insert_bulk', json=ds)
 if not resp.ok:
     print(resp.content)
 print("Inserted!")

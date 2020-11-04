@@ -8,7 +8,7 @@ services:
       - "5434:5432"
     volumes:
       - "./pg-data/:/data/"
-  server:
+  mortar-server:
     build:
       context: .
       dockerfile: "./docker/mortar-server/Dockerfile"
@@ -65,4 +65,9 @@ services:
       - "3030:3030"
     depends_on:
       - pg
-      - server
+      - mortar-server
+  jupyter-notebook:
+    image: jupyter/scipy-notebook
+    ports:
+      - 8888:8888
+    command: "start-notebook.sh --NotebookApp.token=test-secret --NotebookApp.allow_origin='*'"
