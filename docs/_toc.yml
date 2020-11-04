@@ -12,4 +12,5 @@
   expand_sections: true
   sections:
     - file: api/inserting
+    - file: api/inserting_metadata
     - file: api/querying
