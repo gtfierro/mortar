@@ -1,0 +1,1453 @@
+@prefix bldg: <http://xbos.io/ontologies/ciee#> .
+@prefix brick: <https://brickschema.org/schema/1.1/Brick#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+bldg:Level_1 a brick:Floor ;
+    rdf:label "Level 1" ;
+    brick:hasPart bldg:Room_202,
+        bldg:Room_205,
+        bldg:Room_206,
+        bldg:Room_207,
+        bldg:Room_208,
+        bldg:Room_209,
+        bldg:Room_210,
+        bldg:Room_211,
+        bldg:Room_212,
+        bldg:Room_213,
+        bldg:Room_214,
+        bldg:Room_215,
+        bldg:Room_216,
+        bldg:Room_217,
+        bldg:Room_220,
+        bldg:Room_221,
+        bldg:Room_222,
+        bldg:Room_223,
+        bldg:Room_224,
+        bldg:Room_225,
+        bldg:Room_226,
+        bldg:Room_North ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_201 a brick:Room ;
+    brick:adjacentTo bldg:Room_203 ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_226a a brick:Room ;
+    brick:adjacentTo bldg:Room_226 ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_25 a brick:Room ;
+    brick:adjacentTo bldg:Room_203 ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor00d56d a brick:Lighting_System ;
+    rdf:label "Sensor00d56d" ;
+    brick:feeds bldg:Room_203 ;
+    brick:hasLocation bldg:Room_203 ;
+    brick:hasPoint bldg:Sensor00d56d_ambient,
+        bldg:Sensor00d56d_brightness,
+        bldg:Sensor00d56d_meter,
+        bldg:Sensor00d56d_occupancy,
+        bldg:Sensor00d56d_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor013263 a brick:Lighting_System ;
+    rdf:label "Sensor013263" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor013263_ambient,
+        bldg:Sensor013263_brightness,
+        bldg:Sensor013263_meter,
+        bldg:Sensor013263_occupancy,
+        bldg:Sensor013263_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor018ff9 a brick:Lighting_System ;
+    rdf:label "Sensor018ff9" ;
+    brick:feeds bldg:Room_221 ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasPoint bldg:Sensor018ff9_ambient,
+        bldg:Sensor018ff9_brightness,
+        bldg:Sensor018ff9_meter,
+        bldg:Sensor018ff9_occupancy,
+        bldg:Sensor018ff9_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01902e a brick:Lighting_System ;
+    rdf:label "Sensor01902e" ;
+    brick:feeds bldg:Room_220 ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasPoint bldg:Sensor01902e_ambient,
+        bldg:Sensor01902e_brightness,
+        bldg:Sensor01902e_meter,
+        bldg:Sensor01902e_occupancy,
+        bldg:Sensor01902e_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01907b a brick:Lighting_System ;
+    rdf:label "Sensor01907b" ;
+    brick:feeds bldg:Room_221 ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasPoint bldg:Sensor01907b_ambient,
+        bldg:Sensor01907b_brightness,
+        bldg:Sensor01907b_meter,
+        bldg:Sensor01907b_occupancy,
+        bldg:Sensor01907b_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01930e a brick:Lighting_System ;
+    rdf:label "Sensor01930e" ;
+    brick:feeds bldg:Room_220 ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasPoint bldg:Sensor01930e_ambient,
+        bldg:Sensor01930e_brightness,
+        bldg:Sensor01930e_meter,
+        bldg:Sensor01930e_occupancy,
+        bldg:Sensor01930e_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor019324 a brick:Lighting_System ;
+    rdf:label "Sensor019324" ;
+    brick:feeds bldg:Room_220 ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasPoint bldg:Sensor019324_ambient,
+        bldg:Sensor019324_brightness,
+        bldg:Sensor019324_meter,
+        bldg:Sensor019324_occupancy,
+        bldg:Sensor019324_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01934e a brick:Lighting_System ;
+    rdf:label "Sensor01934e" ;
+    brick:feeds bldg:Room_221 ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasPoint bldg:Sensor01934e_ambient,
+        bldg:Sensor01934e_brightness,
+        bldg:Sensor01934e_meter,
+        bldg:Sensor01934e_occupancy,
+        bldg:Sensor01934e_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01935b a brick:Lighting_System ;
+    rdf:label "Sensor01935b" ;
+    brick:feeds bldg:Room_220 ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasPoint bldg:Sensor01935b_ambient,
+        bldg:Sensor01935b_brightness,
+        bldg:Sensor01935b_meter,
+        bldg:Sensor01935b_occupancy,
+        bldg:Sensor01935b_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01942b a brick:Lighting_System ;
+    rdf:label "Sensor01942b" ;
+    brick:feeds bldg:Room_221 ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasPoint bldg:Sensor01942b_ambient,
+        bldg:Sensor01942b_brightness,
+        bldg:Sensor01942b_meter,
+        bldg:Sensor01942b_occupancy,
+        bldg:Sensor01942b_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02309c a brick:Lighting_System ;
+    rdf:label "Sensor02309c" ;
+    brick:feeds bldg:Room_220 ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasPoint bldg:Sensor02309c_ambient,
+        bldg:Sensor02309c_brightness,
+        bldg:Sensor02309c_meter,
+        bldg:Sensor02309c_occupancy,
+        bldg:Sensor02309c_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d429 a brick:Lighting_System ;
+    rdf:label "Sensor02d429" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d429_ambient,
+        bldg:Sensor02d429_brightness,
+        bldg:Sensor02d429_meter,
+        bldg:Sensor02d429_occupancy,
+        bldg:Sensor02d429_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d432 a brick:Lighting_System ;
+    rdf:label "Sensor02d432" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d432_ambient,
+        bldg:Sensor02d432_brightness,
+        bldg:Sensor02d432_meter,
+        bldg:Sensor02d432_occupancy,
+        bldg:Sensor02d432_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d433 a brick:Lighting_System ;
+    rdf:label "Sensor02d433" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d433_ambient,
+        bldg:Sensor02d433_brightness,
+        bldg:Sensor02d433_meter,
+        bldg:Sensor02d433_occupancy,
+        bldg:Sensor02d433_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d438 a brick:Lighting_System ;
+    rdf:label "Sensor02d438" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d438_ambient,
+        bldg:Sensor02d438_brightness,
+        bldg:Sensor02d438_meter,
+        bldg:Sensor02d438_occupancy,
+        bldg:Sensor02d438_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d444 a brick:Lighting_System ;
+    rdf:label "Sensor02d444" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d444_ambient,
+        bldg:Sensor02d444_brightness,
+        bldg:Sensor02d444_meter,
+        bldg:Sensor02d444_occupancy,
+        bldg:Sensor02d444_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d454 a brick:Lighting_System ;
+    rdf:label "Sensor02d454" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d454_ambient,
+        bldg:Sensor02d454_brightness,
+        bldg:Sensor02d454_meter,
+        bldg:Sensor02d454_occupancy,
+        bldg:Sensor02d454_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d455 a brick:Lighting_System ;
+    rdf:label "Sensor02d455" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d455_ambient,
+        bldg:Sensor02d455_brightness,
+        bldg:Sensor02d455_meter,
+        bldg:Sensor02d455_occupancy,
+        bldg:Sensor02d455_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d458 a brick:Lighting_System ;
+    rdf:label "Sensor02d458" ;
+    brick:feeds bldg:Room_207 ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:Sensor02d458_ambient,
+        bldg:Sensor02d458_brightness,
+        bldg:Sensor02d458_meter,
+        bldg:Sensor02d458_occupancy,
+        bldg:Sensor02d458_state ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor30005f a brick:Lighting_System ;
+    rdf:label "Sensor30005f" ;
+    brick:feeds bldg:Room_221 ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasPoint bldg:Sensor30005f_ambient,
+        bldg:Sensor30005f_brightness,
+        bldg:Sensor30005f_meter,
+        bldg:Sensor30005f_occupancy,
+        bldg:Sensor30005f_state ;
+    brick:hasSite bldg:ciee .
+
+<http://xbos.io/ontologies/ciee#green_button_meter_pLqm959grljrDZTim8kxZmueUHc=> a brick:Green_Button_Meter ;
+    brick:hasSite bldg:ciee .
+
+bldg:hamilton_0022_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_216 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_216 .
+
+bldg:hamilton_0022_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_216 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_216 .
+
+bldg:hamilton_0022_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_216 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_216 .
+
+bldg:hamilton_0022_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_216 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_216 .
+
+bldg:hamilton_0025_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_0025_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_0025_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_0025_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_0027_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_206 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_206 .
+
+bldg:hamilton_0027_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_206 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_206 .
+
+bldg:hamilton_0027_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_206 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_206 .
+
+bldg:hamilton_0027_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_206 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_206 .
+
+bldg:hamilton_0028_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_214 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_214 .
+
+bldg:hamilton_0028_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_214 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_214 .
+
+bldg:hamilton_0028_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_214 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_214 .
+
+bldg:hamilton_0028_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_214 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_214 .
+
+bldg:hamilton_0029_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_205 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_205 .
+
+bldg:hamilton_0029_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_205 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_205 .
+
+bldg:hamilton_0029_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_205 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_205 .
+
+bldg:hamilton_0029_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_205 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_205 .
+
+bldg:hamilton_002a_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_210 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_210 .
+
+bldg:hamilton_002a_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_210 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_210 .
+
+bldg:hamilton_002a_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_210 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_210 .
+
+bldg:hamilton_002a_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_210 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_210 .
+
+bldg:hamilton_002b_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_002b_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_002b_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_002b_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_002c_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_215 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_215 .
+
+bldg:hamilton_002c_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_215 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_215 .
+
+bldg:hamilton_002c_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_215 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_215 .
+
+bldg:hamilton_002c_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_215 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_215 .
+
+bldg:hamilton_002e_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_209 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_209 .
+
+bldg:hamilton_002e_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_209 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_209 .
+
+bldg:hamilton_002e_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_209 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_209 .
+
+bldg:hamilton_002e_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_209 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_209 .
+
+bldg:hamilton_005a_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_212 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_212 .
+
+bldg:hamilton_005a_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_212 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_212 .
+
+bldg:hamilton_005a_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_212 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_212 .
+
+bldg:hamilton_005a_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_212 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_212 .
+
+bldg:hamilton_005b_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_217 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_217 .
+
+bldg:hamilton_005b_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_217 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_217 .
+
+bldg:hamilton_005b_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_217 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_217 .
+
+bldg:hamilton_005b_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_217 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_217 .
+
+bldg:hamilton_005c_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_207 .
+
+bldg:hamilton_005c_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_207 .
+
+bldg:hamilton_005c_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_207 .
+
+bldg:hamilton_005c_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_207 .
+
+bldg:hamilton_005d_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_005d_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_005d_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_005d_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_208 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_208 .
+
+bldg:hamilton_005e_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_211 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_211 .
+
+bldg:hamilton_005e_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_211 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_211 .
+
+bldg:hamilton_005e_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_211 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_211 .
+
+bldg:hamilton_005e_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_211 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_211 .
+
+bldg:hamilton_005f_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_005f_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_005f_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_005f_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_0060_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_213 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_213 .
+
+bldg:hamilton_0060_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_213 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_213 .
+
+bldg:hamilton_0060_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_213 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_213 .
+
+bldg:hamilton_0060_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_213 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_213 .
+
+bldg:hamilton_00ad_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_221 .
+
+bldg:hamilton_00ad_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_221 .
+
+bldg:hamilton_00ad_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_221 .
+
+bldg:hamilton_00ad_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_221 .
+
+bldg:hamilton_00b8_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_00b8_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_00b8_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_00b8_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_220 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_220 .
+
+bldg:hamilton_00dc_air_rh a brick:Relative_Humidity_Sensor ;
+    brick:hasLocation bldg:Room_North ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_North .
+
+bldg:hamilton_00dc_air_temp a brick:Zone_Air_Temperature_Sensor ;
+    brick:hasLocation bldg:Room_North ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_North .
+
+bldg:hamilton_00dc_lux a brick:Illumination_Sensor ;
+    brick:hasLocation bldg:Room_North ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_North .
+
+bldg:hamilton_00dc_presence a brick:Occupancy_Sensor ;
+    brick:hasLocation bldg:Room_North ;
+    brick:hasSite bldg:ciee ;
+    brick:isPointOf bldg:Room_North .
+
+bldg:hvac_zone_centralzone_tstat a brick:Thermostat ;
+    brick:controls bldg:RTUCentral ;
+    brick:hasLocation bldg:Room_221 ;
+    brick:hasPoint bldg:hvac_zone_centralzone_tstat_cooling_setpoint,
+        bldg:hvac_zone_centralzone_tstat_fan,
+        bldg:hvac_zone_centralzone_tstat_heating_setpoint,
+        bldg:hvac_zone_centralzone_tstat_mode,
+        bldg:hvac_zone_centralzone_tstat_override,
+        bldg:hvac_zone_centralzone_tstat_state,
+        bldg:hvac_zone_centralzone_tstat_temperature ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat a brick:Thermostat ;
+    brick:controls bldg:RTUEast ;
+    brick:hasLocation bldg:Room_213 ;
+    brick:hasPoint bldg:hvac_zone_eastzone_tstat_cooling_setpoint,
+        bldg:hvac_zone_eastzone_tstat_fan,
+        bldg:hvac_zone_eastzone_tstat_heating_setpoint,
+        bldg:hvac_zone_eastzone_tstat_mode,
+        bldg:hvac_zone_eastzone_tstat_override,
+        bldg:hvac_zone_eastzone_tstat_state,
+        bldg:hvac_zone_eastzone_tstat_temperature ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat a brick:Thermostat ;
+    brick:controls bldg:RTUNorth ;
+    brick:hasLocation bldg:Room_226 ;
+    brick:hasPoint bldg:hvac_zone_northzone_tstat_cooling_setpoint,
+        bldg:hvac_zone_northzone_tstat_fan,
+        bldg:hvac_zone_northzone_tstat_heating_setpoint,
+        bldg:hvac_zone_northzone_tstat_mode,
+        bldg:hvac_zone_northzone_tstat_override,
+        bldg:hvac_zone_northzone_tstat_state,
+        bldg:hvac_zone_northzone_tstat_temperature ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat a brick:Thermostat ;
+    brick:controls bldg:RTUSouth ;
+    brick:hasLocation bldg:Room_207 ;
+    brick:hasPoint bldg:hvac_zone_southzone_tstat_cooling_setpoint,
+        bldg:hvac_zone_southzone_tstat_fan,
+        bldg:hvac_zone_southzone_tstat_heating_setpoint,
+        bldg:hvac_zone_southzone_tstat_mode,
+        bldg:hvac_zone_southzone_tstat_override,
+        bldg:hvac_zone_southzone_tstat_state,
+        bldg:hvac_zone_southzone_tstat_temperature ;
+    brick:hasSite bldg:ciee .
+
+bldg:meter_0xd8d5b9000000a110 a brick:Building_Electric_Meter ;
+    brick:hasSite bldg:ciee .
+
+bldg:return_damper_12 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_208 .
+
+bldg:return_damper_13 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_207 .
+
+bldg:return_damper_14 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_206 .
+
+bldg:return_damper_15 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_209 .
+
+bldg:return_damper_16 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_210 .
+
+bldg:return_damper_17 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_211 .
+
+bldg:return_damper_18 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_212 .
+
+bldg:return_damper_19 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_213 .
+
+bldg:return_damper_25 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_226 .
+
+bldg:return_damper_27 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_225 .
+
+bldg:return_damper_29 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_224 .
+
+bldg:return_damper_32 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_223 .
+
+bldg:return_damper_35 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_222 .
+
+bldg:return_damper_37 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_223 .
+
+bldg:return_damper_39 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_222 .
+
+bldg:return_damper_42 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_214 .
+
+bldg:return_damper_44 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_215 .
+
+bldg:return_damper_45 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_216 .
+
+bldg:return_damper_46 a brick:Return_Air_Damper ;
+    brick:hasSite bldg:ciee ;
+    brick:isFedBy bldg:Room_217 .
+
+bldg:supply_damper_10 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_208 .
+
+bldg:supply_damper_11 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_208 .
+
+bldg:supply_damper_20 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_209 .
+
+bldg:supply_damper_21 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_210 .
+
+bldg:supply_damper_22 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_211 .
+
+bldg:supply_damper_23 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_212 .
+
+bldg:supply_damper_24 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_213 .
+
+bldg:supply_damper_26 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_226 .
+
+bldg:supply_damper_28 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_225 .
+
+bldg:supply_damper_30 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_224 .
+
+bldg:supply_damper_33 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_223 .
+
+bldg:supply_damper_34 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_222 .
+
+bldg:supply_damper_4 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_206 .
+
+bldg:supply_damper_43 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_214 .
+
+bldg:supply_damper_47 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_215 .
+
+bldg:supply_damper_48 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_216 .
+
+bldg:supply_damper_49 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_217 .
+
+bldg:supply_damper_7 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_207 .
+
+bldg:supply_damper_8 a brick:Supply_Air_Damper ;
+    brick:feeds bldg:Room_207 .
+
+bldg:weather_KOAK_cloud_coverage a brick:Weather_Cloud_Coverage_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_KOAK_cloud_height a brick:Weather_Cloud_Height_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_KOAK_relative_humidity a brick:Relative_Humidity_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_KOAK_temperature a brick:Weather_Temperature_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_KOAK_wind_direction a brick:Wind_Direction_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_KOAK_wind_speed a brick:Wind_Speed_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_LBNL1_cloud_coverage a brick:Weather_Cloud_Coverage_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_LBNL1_cloud_height a brick:Weather_Cloud_Height_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_LBNL1_relative_humidity a brick:Relative_Humidity_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_LBNL1_temperature a brick:Weather_Temperature_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_LBNL1_wind_direction a brick:Wind_Direction_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:weather_LBNL1_wind_speed a brick:Wind_Speed_Sensor ;
+    brick:hasSite bldg:ciee .
+
+brick:PlugStrip a owl:Class ;
+    rdfs:subClassOf brick:Equipment .
+
+brick:areaSquareFeet a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+brick:areaSquareMeters a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+brick:humanName a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+brick:isSiteOf a owl:ObjectProperty ;
+    rdfs:domain brick:Site ;
+    owl:inverseOf brick:hasSite .
+
+brick:numFloors a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+brick:primaryFunction a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+brick:timezone a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+brick:zipCode a owl:ObjectProperty ;
+    rdfs:range brick:Label .
+
+bldg:RTUCentral a brick:RTU ;
+    brick:feeds bldg:CentralZone ;
+    brick:hasSite bldg:ciee .
+
+bldg:RTUEast a brick:RTU ;
+    brick:feeds bldg:EastZone ;
+    brick:hasSite bldg:ciee .
+
+bldg:RTUNorth a brick:RTU ;
+    brick:feeds bldg:NorthZone ;
+    brick:hasSite bldg:ciee .
+
+bldg:RTUSouth a brick:RTU ;
+    brick:feeds bldg:SouthZone ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_200 a brick:Room ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_202 a brick:Room ;
+    rdf:label "WC" ;
+    brick:adjacentTo bldg:Room_203 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Sensor00d56d_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor00d56d_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor00d56d_meter a brick:Electric_Meter .
+
+bldg:Sensor00d56d_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor00d56d_state a brick:Lighting_State .
+
+bldg:Sensor013263_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor013263_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor013263_meter a brick:Electric_Meter .
+
+bldg:Sensor013263_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor013263_state a brick:Lighting_State .
+
+bldg:Sensor018ff9_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor018ff9_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor018ff9_meter a brick:Electric_Meter .
+
+bldg:Sensor018ff9_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor018ff9_state a brick:Lighting_State .
+
+bldg:Sensor01902e_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01902e_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01902e_meter a brick:Electric_Meter .
+
+bldg:Sensor01902e_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01902e_state a brick:Lighting_State .
+
+bldg:Sensor01907b_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01907b_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01907b_meter a brick:Electric_Meter .
+
+bldg:Sensor01907b_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01907b_state a brick:Lighting_State .
+
+bldg:Sensor01930e_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01930e_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01930e_meter a brick:Electric_Meter .
+
+bldg:Sensor01930e_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01930e_state a brick:Lighting_State .
+
+bldg:Sensor019324_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor019324_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor019324_meter a brick:Electric_Meter .
+
+bldg:Sensor019324_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor019324_state a brick:Lighting_State .
+
+bldg:Sensor01934e_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01934e_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01934e_meter a brick:Electric_Meter .
+
+bldg:Sensor01934e_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01934e_state a brick:Lighting_State .
+
+bldg:Sensor01935b_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01935b_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01935b_meter a brick:Electric_Meter .
+
+bldg:Sensor01935b_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01935b_state a brick:Lighting_State .
+
+bldg:Sensor01942b_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01942b_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01942b_meter a brick:Electric_Meter .
+
+bldg:Sensor01942b_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor01942b_state a brick:Lighting_State .
+
+bldg:Sensor02309c_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02309c_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02309c_meter a brick:Electric_Meter .
+
+bldg:Sensor02309c_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02309c_state a brick:Lighting_State .
+
+bldg:Sensor02d429_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d429_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d429_meter a brick:Electric_Meter .
+
+bldg:Sensor02d429_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d429_state a brick:Lighting_State .
+
+bldg:Sensor02d432_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d432_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d432_meter a brick:Electric_Meter .
+
+bldg:Sensor02d432_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d432_state a brick:Lighting_State .
+
+bldg:Sensor02d433_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d433_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d433_meter a brick:Electric_Meter .
+
+bldg:Sensor02d433_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d433_state a brick:Lighting_State .
+
+bldg:Sensor02d438_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d438_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d438_meter a brick:Electric_Meter .
+
+bldg:Sensor02d438_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d438_state a brick:Lighting_State .
+
+bldg:Sensor02d444_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d444_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d444_meter a brick:Electric_Meter .
+
+bldg:Sensor02d444_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d444_state a brick:Lighting_State .
+
+bldg:Sensor02d454_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d454_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d454_meter a brick:Electric_Meter .
+
+bldg:Sensor02d454_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d454_state a brick:Lighting_State .
+
+bldg:Sensor02d455_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d455_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d455_meter a brick:Electric_Meter .
+
+bldg:Sensor02d455_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d455_state a brick:Lighting_State .
+
+bldg:Sensor02d458_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d458_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d458_meter a brick:Electric_Meter .
+
+bldg:Sensor02d458_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor02d458_state a brick:Lighting_State .
+
+bldg:Sensor30005f_ambient a brick:Ambient_Illumination_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor30005f_brightness a brick:Lighting_System_Luminance_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor30005f_meter a brick:Electric_Meter .
+
+bldg:Sensor30005f_occupancy a brick:Occupancy_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:Sensor30005f_state a brick:Lighting_State .
+
+bldg:CentralZone a brick:HVAC_Zone ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_cooling_setpoint a brick:Cooling_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_fan a brick:Fan_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_heating_setpoint a brick:Heating_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_mode a brick:Thermostat_Mode_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_override a brick:Override_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_state a brick:Thermostat_Status ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_centralzone_tstat_temperature a brick:Temperature_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_cooling_setpoint a brick:Cooling_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_fan a brick:Fan_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_heating_setpoint a brick:Heating_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_mode a brick:Thermostat_Mode_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_override a brick:Override_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_state a brick:Thermostat_Status ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_eastzone_tstat_temperature a brick:Temperature_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_cooling_setpoint a brick:Cooling_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_fan a brick:Fan_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_heating_setpoint a brick:Heating_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_mode a brick:Thermostat_Mode_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_override a brick:Override_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_state a brick:Thermostat_Status ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_northzone_tstat_temperature a brick:Temperature_Sensor ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_cooling_setpoint a brick:Cooling_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_fan a brick:Fan_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_heating_setpoint a brick:Heating_Temperature_Setpoint ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_mode a brick:Thermostat_Mode_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_override a brick:Override_Command ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_state a brick:Thermostat_Status ;
+    brick:hasSite bldg:ciee .
+
+bldg:hvac_zone_southzone_tstat_temperature a brick:Temperature_Sensor ;
+    brick:hasSite bldg:ciee .
+
+brick:Green_Button_Meter a owl:Class ;
+    rdfs:subClassOf brick:Building_Electric_Meter .
+
+brick:hasSite a owl:ObjectProperty ;
+    rdfs:range brick:Site .
+
+brick:Building_Electric_Meter a owl:Class ;
+    rdfs:subClassOf brick:Electric_Meter .
+
+brick:Weather_Cloud_Coverage_Sensor a owl:Class ;
+    rdfs:subClassOf brick:Sensor,
+        brick:Weather .
+
+brick:Weather_Cloud_Height_Sensor a owl:Class ;
+    rdfs:subClassOf brick:Sensor,
+        brick:Weather .
+
+brick:Weather_Temperature_Sensor a owl:Class ;
+    rdfs:subClassOf brick:Sensor,
+        brick:Weather .
+
+bldg:NorthZone a brick:HVAC_Zone ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_225 a brick:Room ;
+    rdf:label "Office" ;
+    brick:adjacentTo bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:CentralZone .
+
+brick:Site a owl:Class ;
+    rdfs:subClassOf brick:Location .
+
+bldg:CentralZone a brick:HVAC_Zone ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_224 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:NorthZone .
+
+brick:Thermostat_Mode_Command a owl:Class ;
+    rdfs:subClassOf brick:Command .
+
+brick:Thermostat_Status a owl:Class ;
+    rdfs:subClassOf brick:Status .
+
+bldg:EastZone a brick:HVAC_Zone ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_203 a brick:Room ;
+    rdf:label "Copy Room" ;
+    brick:adjacentTo bldg:Room_200,
+        bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Room_222 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:CentralZone .
+
+bldg:Room_223 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:CentralZone .
+
+bldg:Room_226 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:NorthZone .
+
+bldg:SouthZone a brick:HVAC_Zone ;
+    brick:hasSite bldg:ciee .
+
+bldg:Room_205 a brick:Room ;
+    rdf:label "Lobby" ;
+    brick:adjacentTo bldg:Room_206 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_North a brick:Room ;
+    rdf:label "Outside" ;
+    brick:hasSite bldg:ciee .
+
+brick:RTU a owl:Class ;
+    rdfs:subClassOf brick:AHU .
+
+bldg:Room_210 a brick:Room ;
+    rdf:label "Office" ;
+    brick:adjacentTo bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_212 a brick:Room ;
+    rdf:label "Office" ;
+    brick:adjacentTo bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_206 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_209 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_211 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_213 a brick:Room ;
+    rdf:label "Office" ;
+    brick:adjacentTo bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Room_214 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Room_215 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Room_216 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Room_217 a brick:Room ;
+    rdf:label "Office" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:EastZone .
+
+bldg:Room_208 a brick:Room ;
+    rdf:label "Kitchen" ;
+    brick:adjacentTo bldg:Room_221 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+brick:Ambient_Illumination_Sensor a owl:Class ;
+    rdfs:subClassOf brick:Illumination_Sensor .
+
+brick:Illumination_Sensor a owl:Class ;
+    rdfs:subClassOf brick:Sensor .
+
+bldg:Room_221 a brick:Room ;
+    rdf:label "Open Office" ;
+    brick:adjacentTo bldg:Room_207,
+        bldg:Room_209,
+        bldg:Room_211,
+        bldg:Room_214,
+        bldg:Room_215,
+        bldg:Room_223,
+        bldg:Room_226 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:CentralZone .
+
+bldg:Room_207 a brick:Room ;
+    rdf:label "Conference Room" ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:SouthZone .
+
+bldg:Room_220 a brick:Room ;
+    rdf:label "Open Office" ;
+    brick:adjacentTo bldg:Room_216,
+        bldg:Room_217,
+        bldg:Room_222,
+        bldg:Room_224 ;
+    brick:hasSite bldg:ciee ;
+    brick:isPartOf bldg:NorthZone .
+
+bldg:ciee a brick:Site ;
+    brick:AreaSquareFeet "8424" ;
+    brick:Country "US" ;
+    brick:NumFloors "2" ;
+    brick:PrimaryFunction "Office" ;
+    brick:Timezone "America/Los_Angeles" .
+
