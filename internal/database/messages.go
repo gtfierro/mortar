@@ -32,12 +32,12 @@ func (s *Stream) FromURLParams(vals url.Values) error {
 	// mandatory parameters
 	if source := vals.Get("source"); len(source) > 0 {
 		s.SourceName = source
-	} else {
+	} else if len(s.SourceName) == 0 {
 		return errors.New("Params lacks 'source'")
 	}
 	if name := vals.Get("name"); len(name) > 0 {
 		s.Name = name
-	} else {
+	} else if len(s.Name) == 0 {
 		return errors.New("Params lacks 'name'")
 	}
 
@@ -117,6 +117,13 @@ type Dataset interface {
 	Next() bool
 	Values() ([]interface{}, error)
 	Err() error
+}
+
+func GetStream(ds Dataset) Stream {
+	return Stream{
+		SourceName: ds.GetSource(),
+		Name:       ds.GetName(),
+	}
 }
 
 type StreamingDataset struct {

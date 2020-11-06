@@ -120,21 +120,6 @@ func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) 
 	defer cancel()
 	defer r.Body.Close()
 
-	// register stream if necessary
-	var stream database.Stream
-	if err := stream.FromURLParams(r.URL.Query()); err != nil {
-		rerr := fmt.Errorf("Could not read source from params: %w", err)
-		log.Error(rerr)
-		http.Error(w, rerr.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := srv.db.RegisterStream(ctx, stream); err != nil {
-		log.Errorf("Could not register stream %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// insert data
 	var ds database.ArrayDataset
 	if err := json.NewDecoder(r.Body).Decode(&ds); err != nil {
 		log.Errorf("Could not parse dataset %s", err)
@@ -142,6 +127,21 @@ func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	//// TODO: register stream if necessary
+	//stream := database.GetStream(&ds)
+	//if err := stream.FromURLParams(r.URL.Query()); err != nil {
+	//	rerr := fmt.Errorf("Could not read source from params: %w", err)
+	//	log.Error(rerr)
+	//	http.Error(w, rerr.Error(), http.StatusBadRequest)
+	//	return
+	//}
+	//if err := srv.db.RegisterStream(ctx, stream); err != nil {
+	//	log.Errorf("Could not register stream %s", err)
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+
+	// insert data
 	if err := srv.db.InsertHistoricalData(ctx, &ds); err != nil {
 		log.Errorf("Could not insert data %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
