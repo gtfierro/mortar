@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -27,6 +28,7 @@ type Database interface {
 	RegisterStream(context.Context, Stream) error
 	InsertHistoricalData(ctx context.Context, ds Dataset) error
 	ReadDataChunk(context.Context, io.Writer, *Query) error
+	QuerySparql(context.Context, io.Writer, io.Reader) error
 	AddTriples(context.Context, TripleDataset) error
 }
 
@@ -302,6 +304,20 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	}
 
 	return arrow_w.Close()
+}
+
+func (db *TimescaleDatabase) QuerySparql(ctx context.Context, w io.Writer, query io.Reader) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
+	queryURL := fmt.Sprintf("http://%s/query", db.reasonerAddress)
+	resp, err := http.Post(queryURL, "application/json", query)
+	if err != nil {
+		return fmt.Errorf("Could not query %w", err)
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	return err
 }
 
 func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) error {

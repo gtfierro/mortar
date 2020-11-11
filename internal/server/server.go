@@ -1,12 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
-	//"io/ioutil"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -16,12 +17,14 @@ import (
 	"github.com/knakk/rdf"
 )
 
+// Server implements the frontend HTTP interface
 type Server struct {
 	ctx         context.Context
 	db          database.Database
 	httpAddress string
 }
 
+// NewWithInsecureDefaults creates a new Server with the (insecure) default settings; helpful for debugging, but NEVER run in production!
 func NewWithInsecureDefaults(ctx context.Context) (*Server, error) {
 
 	cfg := &config.Config{
@@ -41,6 +44,7 @@ func NewWithInsecureDefaults(ctx context.Context) (*Server, error) {
 	return NewFromConfig(ctx, cfg)
 }
 
+// NewFromConfig creates a new server with the given configuration
 func NewFromConfig(ctx context.Context, cfg *config.Config) (*Server, error) {
 	httpAddress := fmt.Sprintf("%s:%s", cfg.HTTP.ListenAddress, cfg.HTTP.Port)
 
@@ -58,6 +62,7 @@ func NewFromConfig(ctx context.Context, cfg *config.Config) (*Server, error) {
 	return srv, nil
 }
 
+// Shutdown disconnects from the database and returns
 func (srv *Server) Shutdown() error {
 	log := logging.FromContext(srv.ctx)
 	log.Info("Shutting down server")
@@ -66,6 +71,7 @@ func (srv *Server) Shutdown() error {
 	return nil
 }
 
+// ServeHTTP starts the HTTP server listener. Blocks.
 func (srv *Server) ServeHTTP() error {
 	log := logging.FromContext(srv.ctx)
 	mux := http.NewServeMux()
@@ -74,6 +80,7 @@ func (srv *Server) ServeHTTP() error {
 	mux.HandleFunc("/insert_streaming", srv.insertHistoricalDataStreaming)
 	mux.HandleFunc("/insert_triple_file", srv.insertTriplesFromFile)
 	mux.HandleFunc("/query", srv.readDataChunk)
+	mux.HandleFunc("/sparql", srv.serveSPARQLQuery)
 
 	server := &http.Server{
 		Addr:    srv.httpAddress,
@@ -156,9 +163,9 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 	defer r.Body.Close()
 
 	var (
-		rdg     database.Reading
-		stream  database.Stream
-		row_num = 0
+		rdg    database.Reading
+		stream database.Stream
+		rowNum = 0
 	)
 
 	if err := stream.FromURLParams(r.URL.Query()); err != nil {
@@ -199,13 +206,13 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 			}
 
 			if err := rdg.FromCSVRow(row); err != nil {
-				log.Errorf("Bad row %d in CSV file: %w", row_num, err)
+				log.Errorf("Bad row %d in CSV file: %w", rowNum, err)
 				cancel()
-				errc <- fmt.Errorf("Bad row %d in CSV file: %w", row_num, err)
+				errc <- fmt.Errorf("Bad row %d in CSV file: %w", rowNum, err)
 				return
 			}
 			ds.GetReadings() <- rdg
-			row_num += 1
+			rowNum++
 		}
 		errc <- nil
 	}()
@@ -265,5 +272,35 @@ func (srv *Server) insertTriplesFromFile(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Errorf("Problem inserting triples: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
+	log := logging.FromContext(srv.ctx)
+	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	defer cancel()
+	defer r.Body.Close()
+
+	var (
+		sparqlQuery []byte
+		err         error
+	)
+	if sparqlQuery, err = ioutil.ReadAll(r.Body); err != nil {
+		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusBadRequest)
+		return
+	} else if len(sparqlQuery) == 0 {
+		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := srv.db.QuerySparql(ctx, w, bytes.NewBuffer(sparqlQuery)); err != nil {
+		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusInternalServerError)
+		return
 	}
 }
