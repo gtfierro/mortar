@@ -4,6 +4,7 @@ services:
   pg:
     build: "./docker/pg"
     image: "mortar/pg"
+    restart: always
     ports:
       - "5434:5432"
     volumes:
@@ -13,6 +14,7 @@ services:
       context: .
       dockerfile: "./docker/mortar-server/Dockerfile"
     image: "mortar/server2"
+    restart: always
     depends_on:
       - "pg"
     environment:
@@ -29,6 +31,7 @@ services:
         # - "2112:2112"
   prometheus:
     image: prom/prometheus:latest
+    restart: always
     container_name: prometheus
     ports:
       - 9090:9090
@@ -40,6 +43,7 @@ services:
       - cadvisor
   cadvisor:
     image: google/cadvisor:latest
+    restart: always
     container_name: cadvisor
     ports:
       - 8080:8080
@@ -55,6 +59,7 @@ services:
       context: .
       dockerfile: "./docker/reasoner/Dockerfile"
     image: "mortar/reasoner"
+    restart: always
     environment:
       - MORTAR_DB_HOST=pg
       - MORTAR_DB_PORT=5432
@@ -68,6 +73,7 @@ services:
       - mortar-server
   jupyter-notebook:
     image: jupyter/scipy-notebook
+    restart: always
     ports:
       - 8888:8888
     command: "start-notebook.sh --NotebookApp.token=test-secret --NotebookApp.allow_origin='*'"
