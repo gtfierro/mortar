@@ -81,8 +81,9 @@ func NewTimescaleFromConfig(ctx context.Context, cfg *config.Config) (Database, 
 		if err != nil {
 			log.Warnf("Failed to connect to database (%s); retrying in 5 seconds", err.Error())
 			time.Sleep(5 * time.Second)
+		} else {
+			break
 		}
-		break
 	}
 	log.Infof("Connected to postgres at %s", cfg.Database.Host)
 	return &TimescaleDatabase{
