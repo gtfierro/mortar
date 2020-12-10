@@ -42,7 +42,7 @@ with open(sys.argv[1], 'r') as f:
         for row in r:
             if not registered:
                 source = quote(row['site'])
-                name = quote(row['id'])
+                name = quote(row['label'])
                 uri = quote(row['id'])
                 btype = quote(row['type'])
                 units = 'degF'
