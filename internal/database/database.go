@@ -250,9 +250,9 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		// get ids from the uris
 		var rows pgx.Rows
 		if len(q.Sources) > 0 {
-			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE name = ANY($1) AND source = ANY($2)`, uris, q.Sources)
+			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1)) AND source = ANY($2)`, uris, q.Sources)
 		} else {
-			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE name = ANY($1)`, uris)
+			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1))`, uris)
 		}
 		if err != nil {
 			panic(err)
@@ -269,16 +269,22 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	sch := arrow.NewSchema([]arrow.Field{
 		{Name: "time", Type: arrow.FixedWidthTypes.Timestamp_ns, Nullable: false},
 		{Name: "value", Type: arrow.PrimitiveTypes.Float64, Nullable: false},
-		{Name: "id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
+		//{Name: "id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
+		{Name: "id", Type: arrow.BinaryTypes.String, Nullable: false},
+		{Name: "unit", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "type", Type: arrow.BinaryTypes.String, Nullable: true},
 	}, nil)
 	bldr := array.NewRecordBuilder(memory.DefaultAllocator, sch)
 	defer bldr.Release()
 
-	r_times := bldr.Field(0).(*array.TimestampBuilder)
-	r_values := bldr.Field(1).(*array.Float64Builder)
-	r_ids := bldr.Field(2).(*array.Int64Builder)
+	rTimes := bldr.Field(0).(*array.TimestampBuilder)
+	rValues := bldr.Field(1).(*array.Float64Builder)
+	// rIds := bldr.Field(2).(*array.Int64Builder)
+	rNames := bldr.Field(2).(*array.StringBuilder)
+	rUnit := bldr.Field(3).(*array.StringBuilder)
+	rType := bldr.Field(4).(*array.StringBuilder)
 
-	rows, err := db.pool.Query(ctx, `SELECT time, value, stream_id FROM data WHERE time>=$1 and time <=$2 and stream_id = ANY($3)`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
+	rows, err := db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name), units, brick_class FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	if err != nil {
 		return fmt.Errorf("Could not query %w", err)
 	}
@@ -286,25 +292,30 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		var (
 			t time.Time
 			v float64
-			i int64
+			s string
+			u string
+			c string
 		)
-		if err := rows.Scan(&t, &v, &i); err != nil {
+		if err := rows.Scan(&t, &v, &s, &u, &c); err != nil {
 			return fmt.Errorf("Could not query %w", err)
 		}
-		r_times.Append(arrow.Timestamp(t.UnixNano()))
-		r_values.Append(v)
-		r_ids.Append(i)
+		rTimes.Append(arrow.Timestamp(t.UnixNano()))
+		rValues.Append(v)
+		//rIds.Append(i)
+		rNames.Append(s)
+		rUnit.Append(u)
+		rType.Append(c)
 	}
 
 	rec := bldr.NewRecord()
 	defer rec.Release()
 
-	arrow_w := ipc.NewWriter(w, ipc.WithSchema(rec.Schema()))
-	if err := arrow_w.Write(rec); err != nil {
+	arrowWriter := ipc.NewWriter(w, ipc.WithSchema(rec.Schema()))
+	if err := arrowWriter.Write(rec); err != nil {
 		return fmt.Errorf("Could not write record %w", err)
 	}
 
-	return arrow_w.Close()
+	return arrowWriter.Close()
 }
 
 func (db *TimescaleDatabase) QuerySparql(ctx context.Context, w io.Writer, query io.Reader) error {
