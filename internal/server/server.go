@@ -230,6 +230,7 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 	}
 }
 
+// TODO: get metadat as well: units, SPARQL query results, etc
 func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 	ctx, cancel := context.WithTimeout(srv.ctx, 5*time.Minute)

@@ -399,7 +399,9 @@ func (ds *StreamingTripleDataset) GetTriples() chan rdf.Triple {
 
 func (ds *StreamingTripleDataset) Next() bool {
 	triple, err := ds.dec.Decode()
-	if err == io.EOF {
+	// sometimes the triple is not nil, but all the fields are nil; this probably happens
+	// because of a parse error
+	if err == io.EOF || triple.Subj == nil || triple.Pred == nil || triple.Obj == nil {
 		return false
 	}
 	ds.current = &triple
