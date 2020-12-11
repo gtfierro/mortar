@@ -286,7 +286,12 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 		sparqlQuery []byte
 		err         error
 	)
-	if sparqlQuery, err = ioutil.ReadAll(r.Body); err != nil {
+	w.Header().Add("Content-Type", "application/sparql-results+json")
+
+	// check query parameters
+	if queryString := r.URL.Query().Get("query"); len(queryString) > 0 {
+		sparqlQuery = []byte(queryString)
+	} else if sparqlQuery, err = ioutil.ReadAll(r.Body); err != nil {
 		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
 		log.Error(rerr)
 		http.Error(w, rerr.Error(), http.StatusBadRequest)
@@ -297,6 +302,7 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, rerr.Error(), http.StatusBadRequest)
 		return
 	}
+	// TODO: read off of query parameter
 
 	if err := srv.db.QuerySparql(ctx, w, bytes.NewBuffer(sparqlQuery)); err != nil {
 		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
