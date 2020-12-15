@@ -81,6 +81,9 @@ func (srv *Server) ServeHTTP() error {
 	mux.HandleFunc("/insert_triple_file", srv.insertTriplesFromFile)
 	mux.HandleFunc("/query", srv.readDataChunk)
 	mux.HandleFunc("/sparql", srv.serveSPARQLQuery)
+	// TODO: qualify; accepts list of SPARQL queries, returns matrix of
+	// which queries returned results (+ how many rows?) for each site in Mortar
+	mux.HandleFunc("/qualify", srv.handleQualify)
 
 	server := &http.Server{
 		Addr:    srv.httpAddress,
@@ -304,8 +307,39 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO: read off of query parameter
 
-	if err := srv.db.QuerySparql(ctx, w, bytes.NewBuffer(sparqlQuery)); err != nil {
+	if err := srv.db.QuerySparqlWriter(ctx, w, bytes.NewBuffer(sparqlQuery)); err != nil {
 		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (srv *Server) handleQualify(w http.ResponseWriter, r *http.Request) {
+	// TODO: JSON-encoded list of sparql queries
+	log := logging.FromContext(srv.ctx)
+
+	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	defer cancel()
+	defer r.Body.Close()
+
+	var qualifyQueryList []string
+	if err := json.NewDecoder(r.Body).Decode(&qualifyQueryList); err != nil {
+		log.Errorf("Could not parse list of queries %s", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	results, err := srv.db.Qualify(ctx, qualifyQueryList)
+	if err != nil {
+		rerr := fmt.Errorf("Could not qualify: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusInternalServerError)
+		return
+	}
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(results); err != nil {
+		rerr := fmt.Errorf("Could not serialize qualify results: %w", err)
 		log.Error(rerr)
 		http.Error(w, rerr.Error(), http.StatusInternalServerError)
 		return

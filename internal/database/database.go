@@ -28,7 +28,9 @@ type Database interface {
 	RegisterStream(context.Context, Stream) error
 	InsertHistoricalData(ctx context.Context, ds Dataset) error
 	ReadDataChunk(context.Context, io.Writer, *Query) error
-	QuerySparql(context.Context, io.Writer, io.Reader) error
+	QuerySparqlWriter(context.Context, io.Writer, io.Reader) error
+	QuerySparql(context.Context, string, string) (*sparql.Results, error)
+	Qualify(context.Context, []string) (map[string][]int, error)
 	AddTriples(context.Context, TripleDataset) error
 }
 
@@ -171,8 +173,6 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 		return fmt.Errorf("Cannot handle invalid dataset: %w", err)
 	}
 
-	// TODO: does dataset need to be streamed? (probably)
-	// TODO: how to insert into historical data --- need to disable compression?
 	var num int64 = 0
 	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
 		// check valid stream
@@ -183,7 +183,6 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 			return fmt.Errorf("No such stream (SourceName: %s, Name: %s): %w", ds.GetSource(), ds.GetName(), err)
 		}
 
-		// TODO: use jackx CopyFrom, https://godoc.org/github.com/jackc/pgx#CopyFromSource
 		ds.SetId(stream_id)
 		_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
 		if err != nil {
@@ -231,13 +230,10 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	// implied by the query, and use those to determine the ids in the 'data' table
 	if len(q.Sparql) > 0 {
 		fmt.Println("SPARQL", q.Sparql)
-		repo, err := sparql.NewRepo(fmt.Sprintf("http://%s/query", db.reasonerAddress))
+		// TODO: get all graphs
+		res, err := db.QuerySparql(ctx, "default", q.Sparql)
 		if err != nil {
-			panic(err)
-		}
-		res, err := repo.Query(q.Sparql)
-		if err != nil {
-			panic(err)
+			return err
 		}
 		var uris []string
 		for _, row := range res.Results.Bindings {
@@ -255,7 +251,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1))`, uris)
 		}
 		if err != nil {
-			panic(err)
+			return err
 		}
 		for rows.Next() {
 			var i int64
@@ -318,11 +314,11 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	return arrowWriter.Close()
 }
 
-func (db *TimescaleDatabase) QuerySparql(ctx context.Context, w io.Writer, query io.Reader) error {
+func (db *TimescaleDatabase) QuerySparqlWriter(ctx context.Context, w io.Writer, query io.Reader) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	queryURL := fmt.Sprintf("http://%s/query", db.reasonerAddress)
+	queryURL := fmt.Sprintf("http://%s/query/all", db.reasonerAddress)
 	resp, err := http.Post(queryURL, "application/json", query)
 	if err != nil {
 		return fmt.Errorf("Could not query %w", err)
@@ -330,6 +326,17 @@ func (db *TimescaleDatabase) QuerySparql(ctx context.Context, w io.Writer, query
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	return err
+}
+
+func (db *TimescaleDatabase) QuerySparql(ctx context.Context, graph string, queryString string) (*sparql.Results, error) {
+	if len(graph) == 0 {
+		graph = "default"
+	}
+	repo, err := sparql.NewRepo(fmt.Sprintf("http://%s/query/%s", db.reasonerAddress, graph))
+	if err != nil {
+		return nil, fmt.Errorf("Could not connect to SPARQL endpoint: %w", err)
+	}
+	return repo.Query(queryString)
 }
 
 func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) error {
@@ -370,4 +377,51 @@ func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) e
 		log.Infof("Inserted %5d triples", num)
 	}
 	return err
+}
+
+func (db *TimescaleDatabase) graphs(ctx context.Context) ([]string, error) {
+	// get graph names
+	var graphs []string
+	rows, err := db.pool.Query(ctx, `SELECT distinct source from triples`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var g string
+		if err := rows.Scan(&g); err != nil {
+			return nil, err
+		}
+		graphs = append(graphs, g)
+	}
+	return graphs, nil
+}
+
+func (db *TimescaleDatabase) Qualify(ctx context.Context, qualifyQueryList []string) (map[string][]int, error) {
+	log := logging.FromContext(ctx)
+
+	var querySiteCounts = make(map[string][]int)
+
+	graphs, err := db.graphs(ctx)
+	if err != nil {
+		return querySiteCounts, err
+	}
+
+	for queryIdx, queryString := range qualifyQueryList {
+		for _, graph := range graphs {
+			res, err := db.QuerySparql(ctx, graph, queryString)
+			if err != nil {
+				log.Errorf("Could not evaluate query %s: %w", queryString, err)
+				return querySiteCounts, err
+			}
+			log.Infof("Graph %s, Query %d, # results %d", graph, queryIdx, len(res.Solutions()))
+
+			if _, ok := querySiteCounts[graph]; !ok {
+				querySiteCounts[graph] = make([]int, len(qualifyQueryList))
+			}
+			querySiteCounts[graph][queryIdx] = len(res.Solutions())
+
+		}
+	}
+	log.Infof("Qualify result: %+v", querySiteCounts)
+	return querySiteCounts, nil
 }
