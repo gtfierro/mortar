@@ -11,8 +11,9 @@ use futures::{
 use rdf::{node::Node, uri::Uri};
 use tokio_postgres::{NoTls, Error, AsyncMessage};
 use oxigraph::sparql::{QueryOptions, QueryResults, QueryResultsFormat};
+use oxigraph::model::*;
 use oxigraph::SledStore;
-use reasonable::manager::Manager;
+use reasonable::graphmanager::GraphManager;
 
 #[allow(non_upper_case_globals)]
 const qfmt: &str = "PREFIX brick: <https://brickschema.org/schema/1.1/Brick#>
@@ -29,6 +30,7 @@ fn with_db(store: SledStore) -> impl Filter<Extract = (SledStore,), Error = std:
 
 #[derive(Serialize, Deserialize, Debug)]
 struct EmbeddedTriple {
+    source: String,
     s: String,
     p: String,
     o: String,
@@ -54,9 +56,13 @@ fn parse_triple_term(t: &str) -> Option<Node> {
     Some(r)
 }
 
+fn graphname_node(t: &str) -> NamedOrBlankNode {
+    NamedOrBlankNode::NamedNode(NamedNode::new(format!("urn:{}", t)).unwrap())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let mut mgr = Manager::new();
+    let mut mgr = GraphManager::new();
     // mgr.load_file("/home/gabe/src/Brick/Brick/Brick.ttl").unwrap();
     // mgr.load_file("/home/gabe/src/Brick/Brick/examples/soda_brick.ttl").unwrap();
     //mgr.load_file("~/src/Brick/Brick/examples/soda_brick.ttl").unwrap();
@@ -89,21 +95,28 @@ async fn main() -> Result<(), Error> {
     });
 
     // TODO: use source name in latest triples to do this for each graph
-    let rows = client.query("SELECT s, p, o FROM latest_triples", &[]).await?;
-    let v: Vec<(Node, Node, Node)> = rows.iter().filter_map(|row| {
+    let rows = client.query("SELECT s, p, o, source FROM latest_triples", &[]).await?;
+    let mut values: HashMap<String, Vec<(Node, Node, Node)>> = HashMap::new();
+    for row in rows {
         let (s, p, o): (&str, &str, &str) = (row.get(0), row.get(1), row.get(2));
-        Some((parse_triple_term(s)?,
-              parse_triple_term(p)?,
-              parse_triple_term(o)?))
-    }).collect();
-    println!("triples: {}", v.len());
-    mgr.add_triples(v);
+        let source: &str = row.get(3);
+        values.entry(source.to_owned())
+              .or_insert(Vec::new())
+              .push((parse_triple_term(s).unwrap(), parse_triple_term(p).unwrap(), parse_triple_term(o).unwrap()));
+    }
+    for (graphname, v) in values.iter() {
+        println!("graph {} triples: {}", graphname, v.len());
+        mgr.add_triples(Some(graphname.clone()), v.clone());
+    }
+    //let v: Vec<(String, Node, Node, Node)> = rows.iter().filter_map(|row| {
+    //}).collect();
 
 
     // subscribe
     client.execute("LISTEN events;", &[]).await?;
 
-    let query = warp::path!("query")
+    // TODO: graph name in the query
+    let query = warp::path!("query" / String)
             .and(warp::body::content_length_limit(1024))
             .and(
                 warp::body::bytes().and_then(|body: bytes::Bytes| async move {
@@ -113,10 +126,16 @@ async fn main() -> Result<(), Error> {
                 }),
             )
             .and(with_db(store.clone()))
-            .map(|query: String, store: SledStore| {
+            .map(|graphname: String, query: String, store: SledStore| {
                 let sparql = format!("{}{}", qfmt, query);
-                println!("query: {}", sparql);
-                let q = store.clone().prepare_query(&sparql, QueryOptions::default()).unwrap();
+                println!("query: {} {}", sparql, graphname);
+                let opts = match graphname.as_str() {
+                    "default" => QueryOptions::default().with_default_graph_as_union(),
+                    "all" => QueryOptions::default().with_default_graph_as_union(),
+                    gname => QueryOptions::default().with_default_graph(graphname_node(gname)) ,
+                };
+                println!("Querying graph {}", graphname_node(&graphname));
+                let q = store.clone().prepare_query(&sparql, opts).unwrap();
                 let res = q.exec().unwrap();
                 let mut resp: Vec<u8> = Vec::new();
                 if let QueryResults::Solutions(_) = res {
@@ -128,20 +147,25 @@ async fn main() -> Result<(), Error> {
                     warp::http::Response::builder()
                         .status(warp::http::StatusCode::INTERNAL_SERVER_ERROR)
                         .body("No results".as_bytes().to_vec())
-
                 }
             });
 
-    let query2 = warp::path!("query")
+    let query2 = warp::path!("query" / String)
             .and(warp::body::content_length_limit(1024))
             .and(warp::header::exact("content-type", "application/x-www-form-urlencoded"))
             .and(warp::body::form())
             .and(with_db(store.clone()))
-            .map(|m: HashMap<String, String>, store: SledStore| {
+            .map(|graphname: String, m: HashMap<String, String>, store: SledStore| {
                 if let Some(query) = m.get("query") {
                     let sparql = format!("{}{}", qfmt, query);
-                    println!("query: {}", sparql);
-                    let q = store.clone().prepare_query(&sparql, QueryOptions::default()).unwrap();
+                    println!("query: {} {}", sparql, graphname);
+                    let opts = match graphname.as_str() {
+                        "default" => QueryOptions::default().with_default_graph_as_union(),
+                        "all" => QueryOptions::default().with_default_graph_as_union(),
+                        gname => QueryOptions::default().with_default_graph(graphname_node(gname)) ,
+                    };
+                    println!("Querying graph {}", graphname_node(&graphname));
+                    let q = store.clone().prepare_query(&sparql, opts).unwrap();
                     let res = q.exec().unwrap();
                     let mut resp: Vec<u8> = Vec::new();
                     if let QueryResults::Solutions(_) = res {
@@ -170,7 +194,8 @@ async fn main() -> Result<(), Error> {
             .run(([0, 0, 0, 0], 3030))
     );
 
-    let mut trips: Vec<(Node, Node, Node)> = Vec::new();
+    //let mut trips: Vec<(Node, Node, Node)> = Vec::new();
+    let mut trips: HashMap<String, Vec<(Node, Node, Node)>> = HashMap::new();
     let mut interval = time::interval(time::Duration::from_secs(10));
     loop {
         tokio::select! {
@@ -178,7 +203,9 @@ async fn main() -> Result<(), Error> {
                 if let Some(x) = msg {
                     if let AsyncMessage::Notification(n) = x {
                         let msg: TripleEvent = serde_json::from_str(n.payload()).unwrap();
-                        trips.push((parse_triple_term(&msg.data.s).unwrap(),
+                        let source = msg.data.source.to_owned();
+                        trips.entry(source).or_insert(Vec::new())
+                             .push((parse_triple_term(&msg.data.s).unwrap(),
                                     parse_triple_term(&msg.data.p).unwrap(),
                                     parse_triple_term(&msg.data.o).unwrap()));
                     }
@@ -186,8 +213,10 @@ async fn main() -> Result<(), Error> {
             },
             _ = interval.tick() => {
                 if trips.len() > 0 {
-                    mgr.add_triples(trips.clone());
-                    println!("Integrated {}", trips.len());
+                    for (graphname, values) in trips.iter() {
+                        mgr.add_triples(Some(graphname.clone()), values.clone());
+                        println!("Integrated {} {}", graphname, values.len());
+                    }
                     trips.clear();
                 }
             }
