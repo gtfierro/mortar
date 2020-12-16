@@ -128,7 +128,7 @@ async fn main() -> Result<(), Error> {
             .and(with_db(store.clone()))
             .map(|graphname: String, query: String, store: SledStore| {
                 let sparql = format!("{}{}", qfmt, query);
-                println!("query: {} {}", sparql, graphname);
+                //println!("query: {} {}", sparql, graphname);
                 let opts = match graphname.as_str() {
                     "default" => QueryOptions::default().with_default_graph_as_union(),
                     "all" => QueryOptions::default().with_default_graph_as_union(),
@@ -158,7 +158,7 @@ async fn main() -> Result<(), Error> {
             .map(|graphname: String, m: HashMap<String, String>, store: SledStore| {
                 if let Some(query) = m.get("query") {
                     let sparql = format!("{}{}", qfmt, query);
-                    println!("query: {} {}", sparql, graphname);
+                    //println!("query: {} {}", sparql, graphname);
                     let opts = match graphname.as_str() {
                         "default" => QueryOptions::default().with_default_graph_as_union(),
                         "all" => QueryOptions::default().with_default_graph_as_union(),
