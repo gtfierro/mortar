@@ -81,9 +81,8 @@ func (srv *Server) ServeHTTP() error {
 	mux.HandleFunc("/insert_triple_file", srv.insertTriplesFromFile)
 	mux.HandleFunc("/query", srv.readDataChunk)
 	mux.HandleFunc("/sparql", srv.serveSPARQLQuery)
-	// TODO: qualify; accepts list of SPARQL queries, returns matrix of
-	// which queries returned results (+ how many rows?) for each site in Mortar
 	mux.HandleFunc("/qualify", srv.handleQualify)
+	// TODO: data stream statistics (per source, per type, etc)
 
 	server := &http.Server{
 		Addr:    srv.httpAddress,
@@ -126,7 +125,7 @@ func (srv *Server) registerStream(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 
-	ctx, cancel := context.WithTimeout(srv.ctx, 5*time.Minute)
+	ctx, cancel := context.WithTimeout(srv.ctx, config.DataWriteTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -161,7 +160,7 @@ func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) 
 
 func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(srv.ctx, config.DataWriteTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -236,7 +235,7 @@ func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.
 // TODO: get metadat as well: units, SPARQL query results, etc
 func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, 5*time.Minute)
+	ctx, cancel := context.WithTimeout(srv.ctx, config.DataReadTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -292,6 +291,8 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/sparql-results+json")
 
 	// check query parameters
+	// get first 'site'
+	site := r.URL.Query().Get("site")
 	if queryString := r.URL.Query().Get("query"); len(queryString) > 0 {
 		sparqlQuery = []byte(queryString)
 	} else if sparqlQuery, err = ioutil.ReadAll(r.Body); err != nil {
@@ -307,7 +308,7 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO: read off of query parameter
 
-	if err := srv.db.QuerySparqlWriter(ctx, w, bytes.NewBuffer(sparqlQuery)); err != nil {
+	if err := srv.db.QuerySparqlWriter(ctx, w, site, bytes.NewBuffer(sparqlQuery)); err != nil {
 		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
 		log.Error(rerr)
 		http.Error(w, rerr.Error(), http.StatusInternalServerError)

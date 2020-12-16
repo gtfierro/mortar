@@ -21,6 +21,8 @@ import (
 	"github.com/gtfierro/mortar2/internal/logging"
 )
 
+// TODO: updating Brick model should update types in the 'stream' table
+
 // Database defines the interface to the underlying data store
 type Database interface {
 	Close()
@@ -28,7 +30,7 @@ type Database interface {
 	RegisterStream(context.Context, Stream) error
 	InsertHistoricalData(ctx context.Context, ds Dataset) error
 	ReadDataChunk(context.Context, io.Writer, *Query) error
-	QuerySparqlWriter(context.Context, io.Writer, io.Reader) error
+	QuerySparqlWriter(context.Context, io.Writer, string, io.Reader) error
 	QuerySparql(context.Context, string, string) (*sparql.Results, error)
 	Qualify(context.Context, []string) (map[string][]int, error)
 	AddTriples(context.Context, TripleDataset) error
@@ -164,7 +166,7 @@ func (db *TimescaleDatabase) RegisterStream(ctx context.Context, stream Stream) 
 }
 
 func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Dataset) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, config.DataWriteTimeout)
 	defer cancel()
 
 	log := logging.FromContext(ctx)
@@ -223,7 +225,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 }
 
 func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
 	defer cancel()
 
 	// if a sparql query is provided, then execute it, join on 'streams' to get all of the ids
@@ -231,7 +233,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	if len(q.Sparql) > 0 {
 		fmt.Println("SPARQL", q.Sparql)
 		// TODO: get all graphs
-		res, err := db.QuerySparql(ctx, "default", q.Sparql)
+		res, err := db.QuerySparql(ctx, "all", q.Sparql)
 		if err != nil {
 			return err
 		}
@@ -262,6 +264,8 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		}
 	}
 
+	// TODO: need to do a better job of streaming this data out
+
 	sch := arrow.NewSchema([]arrow.Field{
 		{Name: "time", Type: arrow.FixedWidthTypes.Timestamp_ns, Nullable: false},
 		{Name: "value", Type: arrow.PrimitiveTypes.Float64, Nullable: false},
@@ -280,7 +284,27 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	rUnit := bldr.Field(3).(*array.StringBuilder)
 	rType := bldr.Field(4).(*array.StringBuilder)
 
-	rows, err := db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name), units, brick_class FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
+	arrowWriter := ipc.NewWriter(w, ipc.WithSchema(bldr.Schema()))
+
+	var (
+		rows pgx.Rows
+		err  error
+	)
+
+	// write aggregation query if Query contains it
+	if q.AggregationFunc != nil && q.AggregationWindow != nil {
+		sql := fmt.Sprintf(`SELECT time_bucket('%s', time) as time, %s, 
+								   COALESCE(brick_uri, name), units, brick_class 
+							FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3) 
+							GROUP BY time, stream_id, units, brick_class, brick_uri, name
+							ORDER BY stream_id, time`, *q.AggregationWindow, q.AggregationFunc.toSQL("value"))
+		rows, err = db.pool.Query(ctx, sql, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
+	} else {
+		rows, err = db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name), units, brick_class 
+										FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
+										ORDER BY time stream_id, time`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
+	}
+
 	if err != nil {
 		return fmt.Errorf("Could not query %w", err)
 	}
@@ -301,12 +325,21 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		rNames.Append(s)
 		rUnit.Append(u)
 		rType.Append(c)
+
+		// TODO: measure/estimate size
+		if rValues.Len() > 2000000 { // 2 million readings
+			rec := bldr.NewRecord()
+
+			if err := arrowWriter.Write(rec); err != nil {
+				return fmt.Errorf("Could not write record %w", err)
+			}
+			rec.Release()
+		}
 	}
 
 	rec := bldr.NewRecord()
 	defer rec.Release()
 
-	arrowWriter := ipc.NewWriter(w, ipc.WithSchema(rec.Schema()))
 	if err := arrowWriter.Write(rec); err != nil {
 		return fmt.Errorf("Could not write record %w", err)
 	}
@@ -314,11 +347,14 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	return arrowWriter.Close()
 }
 
-func (db *TimescaleDatabase) QuerySparqlWriter(ctx context.Context, w io.Writer, query io.Reader) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+func (db *TimescaleDatabase) QuerySparqlWriter(ctx context.Context, w io.Writer, graph string, query io.Reader) error {
+	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
 	defer cancel()
+	if len(graph) == 0 {
+		graph = "default"
+	}
 
-	queryURL := fmt.Sprintf("http://%s/query/all", db.reasonerAddress)
+	queryURL := fmt.Sprintf("http://%s/query/%s", db.reasonerAddress, graph)
 	resp, err := http.Post(queryURL, "application/json", query)
 	if err != nil {
 		return fmt.Errorf("Could not query %w", err)
@@ -329,6 +365,9 @@ func (db *TimescaleDatabase) QuerySparqlWriter(ctx context.Context, w io.Writer,
 }
 
 func (db *TimescaleDatabase) QuerySparql(ctx context.Context, graph string, queryString string) (*sparql.Results, error) {
+	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
+	defer cancel()
+
 	if len(graph) == 0 {
 		graph = "default"
 	}
@@ -340,7 +379,7 @@ func (db *TimescaleDatabase) QuerySparql(ctx context.Context, graph string, quer
 }
 
 func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, config.DataWriteTimeout)
 	defer cancel()
 
 	log := logging.FromContext(ctx)

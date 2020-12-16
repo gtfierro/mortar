@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -239,12 +240,57 @@ func (d *ArrayDataset) Err() error {
 	return nil
 }
 
+type AggregationType uint
+
+const (
+	AggregationMean AggregationType = iota + 1
+	AggregationMax
+	AggregationMin
+	AggregationSum
+	AggregationCount
+)
+
+func ParseAggregationType(s string) (AggregationType, error) {
+	switch strings.ToLower(s) {
+	case "mean":
+		return AggregationMean, nil
+	case "max":
+		return AggregationMax, nil
+	case "min":
+		return AggregationMin, nil
+	case "sum":
+		return AggregationSum, nil
+	case "count":
+		return AggregationCount, nil
+	default:
+		return 0, fmt.Errorf("Aggregation type %s unknown", s)
+	}
+}
+
+func (agg AggregationType) toSQL(field string) string {
+	switch agg {
+	case AggregationMean:
+		return fmt.Sprintf("avg(%s)", field)
+	case AggregationMax:
+		return fmt.Sprintf("max(%s)", field)
+	case AggregationMin:
+		return fmt.Sprintf("min(%s)", field)
+	case AggregationSum:
+		return fmt.Sprintf("sum(%s)", field)
+	case AggregationCount:
+		return fmt.Sprintf("count(%s)", field)
+	}
+	panic("Invalid Aggregation Function")
+}
+
 type Query struct {
-	Ids     []int64
-	Sources []string
-	Sparql  string
-	Start   time.Time
-	End     time.Time
+	Ids               []int64
+	Sources           []string
+	Sparql            string
+	Start             time.Time
+	End               time.Time
+	AggregationFunc   *AggregationType
+	AggregationWindow *time.Duration
 }
 
 func (q *Query) FromURLParams(vals url.Values) error {
@@ -289,6 +335,22 @@ func (q *Query) FromURLParams(vals url.Values) error {
 		}
 	} else {
 		q.End = time.Now()
+	}
+
+	if _aggfunc := vals.Get("agg"); len(_aggfunc) > 0 {
+		aggfunc, err := ParseAggregationType(_aggfunc)
+		if err != nil {
+			return fmt.Errorf("Invalid aggregation function %s: %w", _aggfunc, err)
+		}
+		q.AggregationFunc = &aggfunc
+	}
+
+	if _window := vals.Get("window"); len(_window) > 0 {
+		window, err := ParseDuration(_window)
+		if err != nil {
+			return fmt.Errorf("Invalid window size %s: %w", _window, err)
+		}
+		q.AggregationWindow = &window
 	}
 
 	q.Sources = vals["source"]
@@ -418,4 +480,40 @@ func (ds *StreamingTripleDataset) Values() ([]interface{}, error) {
 
 func (ds *StreamingTripleDataset) Err() error {
 	return nil
+}
+
+var dur_re = regexp.MustCompile(`(\d+)(\w+)`)
+
+func ParseDuration(expr string) (time.Duration, error) {
+	var d time.Duration
+	results := dur_re.FindAllStringSubmatch(expr, -1)
+	if len(results) == 0 {
+		return d, errors.New("Invalid. Must be Number followed by h,m,s,us,ms,ns,d")
+	}
+	num := results[0][1]
+	units := results[0][2]
+	i, err := strconv.ParseInt(num, 10, 64)
+	if err != nil {
+		return d, err
+	}
+	d = time.Duration(i)
+	switch units {
+	case "h", "hr", "hour", "hours":
+		d *= time.Hour
+	case "m", "min", "minute", "minutes":
+		d *= time.Minute
+	case "s", "sec", "second", "seconds":
+		d *= time.Second
+	case "us", "usec", "microsecond", "microseconds":
+		d *= time.Microsecond
+	case "ms", "msec", "millisecond", "milliseconds":
+		d *= time.Millisecond
+	case "ns", "nsec", "nanosecond", "nanoseconds":
+		d *= time.Nanosecond
+	case "d", "day", "days":
+		d *= 24 * time.Hour
+	default:
+		err = fmt.Errorf("Invalid unit %v. Must be h,m,s,us,ms,ns,d", units)
+	}
+	return d, err
 }
