@@ -16,3 +16,6 @@
 
 # built docs
 docs/_build
+
+# Python
+*.pyc
