@@ -32,6 +32,19 @@ request = pymortar.FetchRequest(
                 name="airtemp_sps",
                 definition=air_temp_setpoint_query,
             )
+        ],
+        dataFrames=[
+            pymortar.DataFrame(
+                name="data1",
+                aggregation=pymortar.MAX,
+                window="15m",
+                timeseries = [
+                    pymortar.Timeseries(
+                        view="airtemp_sensors",
+                        dataVars=["?sensor"],
+                    )
+                ]
+            )
         ]
 )
 resp = c.fetch(request)

@@ -1,6 +1,7 @@
 __version__ = '0.1.0'
 
 import io
+import re
 import functools
 import csv
 import os
@@ -11,11 +12,29 @@ from rdflib.plugins.stores.sparqlstore import SPARQLStore
 import pyarrow as pa
 import pandas as pd
 import logging
-from pymortar.mortar_pb2 import QualifyRequest, FetchRequest, View
+from pymortar.mortar_pb2 import QualifyRequest, FetchRequest, View, DataFrame, Timeseries
+from pymortar.mortar_pb2 import AGG_FUNC_RAW  as RAW
+from pymortar.mortar_pb2 import AGG_FUNC_MEAN as MEAN
+from pymortar.mortar_pb2 import AGG_FUNC_MIN as MIN
+from pymortar.mortar_pb2 import AGG_FUNC_MAX as MAX
+from pymortar.mortar_pb2 import AGG_FUNC_COUNT as COUNT
+from pymortar.mortar_pb2 import AGG_FUNC_SUM as SUM
 
 logging.basicConfig(level=logging.DEBUG)
 
 # TODO: allow prefixes to be defined so that the big long URIs don't show up
+
+def parse_aggfunc(aggfunc):
+    if aggfunc == MAX:
+        return "max"
+    elif aggfunc == MIN:
+        return "min"
+    elif aggfunc == COUNT:
+        return "count"
+    elif aggfunc == SUM:
+        return "sum"
+    elif aggfunc == MEAN:
+        return "mean"
 
 class Client:
     def __init__(self, endpoint):
@@ -110,13 +129,27 @@ class Client:
 
     def fetch(self, query):
         views = {}
-        # dfs = {}
+        dfs = {}
         for view in query.views:
             # view.name
             # view.definition
-            views[view.name] = self.sparql(view.definition, sites=query.sites)
-        # for df in query.dataFrames:
-        return views
+            views[view.name] = {
+                "results": self.sparql(view.definition, sites=query.sites),
+                "definition": view.definition,
+            }
+        for df in query.dataFrames:
+            newdfs = []
+            for ts in df.timeseries:
+                viewquery = views[ts.view]['definition']
+                datavars = [x.strip('?') for x in ts.dataVars]
+                viewvars = views[ts.view]['results'].columns
+                removevars = set(viewvars).difference(set(datavars))
+                for var in removevars:
+                    viewquery = viewquery.replace(f'?{var}', '', 1)
+                _, newdf = self.get_data_sparql(viewquery, agg=parse_aggfunc(df.aggregation), window=df.window)
+                newdfs.append(newdf)
+            dfs[df.name] = functools.reduce(lambda x, y: pd.concat([x, y], axis=0), newdfs)
+        return views, dfs
 
 
 class QualifyResult:
