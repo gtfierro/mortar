@@ -5,7 +5,7 @@ authors = ["Gabe Fierro <gtfierro@cs.berkeley.edu>"]
 edition = "2018"
 
 [dependencies]
-reasonable = "0.1.22"
+reasonable = "0.1.23"
 # reasonable = { path = "../../../reasonable/" }
 tokio = { version = "0.2", features = ["macros", "time"] }
 warp = "0.2"
