@@ -1,3 +1,7 @@
+# Mortar
+
+Beta documentation here: https://beta.mortardata.org/intro.html
+
 ## TODOs:
 - [ ] add API call to get all metadata for an entity
 - [ ] preload some common views
