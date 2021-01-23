@@ -6,8 +6,9 @@ Installation
 
 1. Install `docker-compose` using the [online instructions](https://docs.docker.com/compose/install/)
 2. Clone the `mortar` repo: (`git clone https://github.com/gtfierro/mortar`)
-3. Edit any usernames, passwords and ports as needed in `docker-compose.yml` (these each show up twice so make sure they are the same!)
-4. Bring the server up with `docker-compose up`
+3. Edit any usernames, passwords and ports as needed in `docker-compose.yml` (these each show up three times so make sure they are the same!)
+4. Bring the server up with `docker-compose up`:
+    - Note that if you change the user/password after the first run, you will need to rebuild the postgres container using `docker-compose build pg`
 5. Use `docker ps` to ensure that the services are all running:
     ```
     $ docker ps
