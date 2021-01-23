@@ -2,7 +2,11 @@ version: '3'
 
 services:
   pg:
-    build: "./docker/pg"
+    build:
+      context: ./docker/pg
+      args:
+        - MORTAR_DB_USER=mortarchangeme
+        - MORTAR_DB_PASSWORD=mortarpasswordchangeme
     image: "mortar/pg"
     restart: always
     ports:

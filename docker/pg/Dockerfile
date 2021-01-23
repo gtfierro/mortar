@@ -1,5 +1,8 @@
 FROM postgres:12
 
+ARG MORTAR_DB_USER=mortarchangeme
+ARG MORTAR_DB_PASSWORD=mortarpasswordchangeme
+
 # Silence debconf TERM messages
 RUN echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
 RUN apt-get update && apt-get install -y \
@@ -18,8 +21,8 @@ RUN mkdir /data/
 RUN cat /usr/share/postgresql/postgresql.conf.sample > /data/postgresql.conf
 
 # PostgreSQL ENV variables
-ENV POSTGRES_USER=mortarchangeme
-ENV POSTGRES_PASSWORD=mortarpasswordchangeme
+ENV POSTGRES_USER=$MORTAR_DB_USER
+ENV POSTGRES_PASSWORD=$MORTAR_DB_PASSWORD
 ENV POSTGRES_HOST_AUTH_METHOD=password
 ENV POSTGRES_DB=mortar
 ENV PGDATA=/data/
