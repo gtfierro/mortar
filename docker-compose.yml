@@ -76,7 +76,10 @@ services:
       - pg
       - mortar-server
   jupyter-notebook:
-    image: jupyter/scipy-notebook
+    build:
+        context: .
+        dockerfile: "./docker/jupyter-notebook/Dockerfile"
+        # image: jupyter/scipy-notebook
     restart: always
     ports:
       - 8888:8888
