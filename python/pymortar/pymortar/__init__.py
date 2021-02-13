@@ -24,6 +24,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # TODO: allow prefixes to be defined so that the big long URIs don't show up
 
+
 def parse_aggfunc(aggfunc):
     if aggfunc == MAX:
         return "max"
@@ -35,6 +36,7 @@ def parse_aggfunc(aggfunc):
         return "sum"
     elif aggfunc == MEAN:
         return "mean"
+
 
 class Client:
     def __init__(self, endpoint):
@@ -85,6 +87,8 @@ class Client:
             df = pd.DataFrame.from_records(list(res), columns=[str(c) for c in res.vars])
             df['site'] = site
             dfs.append(df)
+        if len(dfs) == 0:
+            return pd.DataFrame()
         return functools.reduce(lambda x, y: pd.concat([x, y], axis=0), dfs)
 
     # def get_data_ids(self, ids, source=None, start=None, end=None):

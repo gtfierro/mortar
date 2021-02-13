@@ -48,3 +48,4 @@ request = pymortar.FetchRequest(
         ]
 )
 resp = c.fetch(request)
+print(resp)
