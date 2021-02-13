@@ -128,8 +128,13 @@ class Client:
         Returns:
             sites (list of str): List of site names to be used in a subsequent fetch command
         """
+        if isinstance(required_queries, dict):
+            names = list(required_queries.keys())
+            required_queries = [required_queries[q] for q in names]
+        else:
+            names = None
         res = requests.post(f'{self._endpoint}/qualify', json=required_queries)
-        return QualifyResult(res.json())
+        return QualifyResult(res.json(), names=names)
 
     def fetch(self, query):
         views = {}
@@ -157,10 +162,13 @@ class Client:
 
 
 class QualifyResult:
-    def __init__(self, response):
+    def __init__(self, response, names):
         self.resp = response
         num_queries = len(list(self.resp.values())[0])
-        columns = [f"Query_{i}" for i in range(num_queries)]
+        if names is None:
+            columns = [f"Query_{i}" for i in range(num_queries)]
+        else:
+            columns = names
         self._df = pd.DataFrame(self.resp.values(), columns=columns, index=self.resp.keys()).__repr__()
 
     @property

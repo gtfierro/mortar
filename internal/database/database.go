@@ -156,6 +156,22 @@ func (db *TimescaleDatabase) RegisterStream(ctx context.Context, stream Stream) 
 		}
 		registered = res.RowsAffected() > 0
 
+		// TODO: register as a Triple
+		if brickURI != nil && len(*brickURI) > 0 {
+			s := fmt.Sprintf("<%s>", *brickURI)
+			p := "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>"
+			o := "<https://brickschema.org/schema/Brick#Point>"
+			if brickClass != nil && len(*brickClass) > 0 {
+				o = fmt.Sprintf("<%s>", *brickClass)
+			}
+			res, err = txn.Exec(ctx, `INSERT INTO triples(source, origin, time, s, p, o)
+								 VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
+				stream.SourceName, "stream_registration", time.Now(), s, p, o)
+			if err != nil {
+				return fmt.Errorf("Could not register stream: %w", err)
+			}
+		}
+
 		return nil
 	})
 

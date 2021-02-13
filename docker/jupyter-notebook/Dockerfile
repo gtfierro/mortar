@@ -4,7 +4,9 @@ USER root
 COPY notebooks/requirements.txt .
 RUN python -m pip install -r requirements.txt
 
+
 WORKDIR work
+COPY docker/jupyter-notebook/trust-notebooks.sh .
 COPY notebooks .
 
 RUN chown -R $NB_UID:$NB_UID sample-data
@@ -13,3 +15,5 @@ RUN chown -R $NB_UID:$NB_UID sample-data
 RUN chmod -R 755 sample-data
 
 USER $NB_UID
+
+RUN bash trust-notebooks.sh
