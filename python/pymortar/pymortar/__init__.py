@@ -20,7 +20,7 @@ from pymortar.mortar_pb2 import AGG_FUNC_MAX as MAX
 from pymortar.mortar_pb2 import AGG_FUNC_COUNT as COUNT
 from pymortar.mortar_pb2 import AGG_FUNC_SUM as SUM
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # TODO: allow prefixes to be defined so that the big long URIs don't show up
 

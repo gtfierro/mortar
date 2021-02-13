@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "pymortar"
-version = "2.0.0a0"
+version = "2.0.0a2"
 description = ""
 authors = ["Gabe Fierro <gtfierro@cs.berkeley.edu>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 rdflib = "^5.0.0"
 requests = "^2.25.0"
 pyarrow = "^2.0.0"
