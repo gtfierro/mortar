@@ -95,7 +95,7 @@ class Client:
     #     resp = requests.get(f'http://localhost:5001/query?sparql={sparql}&start={start}')
     #     r = pa.ipc.open_stream(resp.content)
 
-    def get_data_sparql(self, sparql, source=None, start=None, end=None, agg=None, window=None):
+    def data(self, sparql, source=None, start=None, end=None, agg=None, window=None):
         parts = []
         if start is not None:
             if isinstance(start, datetime):
@@ -115,8 +115,15 @@ class Client:
             resp = requests.get(f'{self._endpoint}/query?sparql={sparql}&{query_string}&agg={agg}&window={window}')
         else:
             resp = requests.get(f'{self._endpoint}/query?sparql={sparql}&{query_string}')
-        r = pa.ipc.open_stream(resp.content)
-        return metadata, r.read_pandas()
+
+        buf = io.BytesIO(resp.content)
+        # read metadata first
+        r = pa.ipc.open_stream(buf)
+        md = r.read_pandas()
+        # then read data
+        r = pa.ipc.open_stream(buf)
+        df = r.read_pandas()
+        return Dataset(metadata, md, df)
 
     def qualify(self, required_queries):
         """
@@ -183,3 +190,22 @@ class QualifyResult:
         if len(self.resp) == 0:
             return "<No qualify results>"
         return str(self._df)
+
+
+class Dataset:
+    def __init__(self, sparqlMetadata, streamMetadata, df):
+        self._sparql = sparqlMetadata
+        self._stream = streamMetadata
+        self._data = df
+
+    @property
+    def streams(self):
+        return self._stream
+
+    @property
+    def metadata(self):
+        return self._sparql
+
+    @property
+    def data(self):
+        return self._data
