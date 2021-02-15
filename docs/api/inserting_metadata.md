@@ -15,7 +15,7 @@ Inserting Metadata
 
 ## Inserting Brick Metadata
 
-Turtle files can be POSTed to the `/insert_triple_file` API endpoint. Each upload must be qualified by:
+Turtle files can be POSTed to the `/insert/metadata` API endpoint. Each upload must be qualified by:
 
 - `source`, the SourceName for which this metadata is for (this is analogous to the graph name in RDF)
 - `origin`: this is a unique name for this SourceName which represents the point of origin of some Brick metadata. Example origins might be `brick` for the Brick ontology, and `building` for the Brick model of a building. The triples from all origins are merged together (the contents of the most recently uploaded file for each origin are included) and the resulting graph is used by Mortar.
@@ -27,7 +27,7 @@ import requests
 
 #TODO: this code doesn't work in the notebook yet
 with open('Brick.ttl', 'rb') as f:
-    url = 'http://localhost:5001/insert_triple_file?source=test&origin=brick'
+    url = 'http://localhost:5001/insert/metadata?source=test&origin=brick'
     resp = requests.post(url, data=f.read())
     if not resp.ok:
         print(resp.content)

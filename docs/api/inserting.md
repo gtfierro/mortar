@@ -86,7 +86,7 @@ ds = {
     "Readings": readings
 }
 
-resp = requests.post('http://mortar-server:5001/insert_bulk', json=ds)
+resp = requests.post('http://mortar-server:5001/insert/data', json=ds)
 if not resp.ok:
     print(resp.content)
 print("Inserted!")
@@ -99,9 +99,9 @@ Mortar supports ingesting CSV files using a streaming mechanism that is efficien
 - `time`: an RFC3339-encoded timestamp
 - `value`: a float or integer
 
-This file should be POSTed to the `/insert_streaming` API endpoint with a `Content-Type` of `text/csv`. This can be done in a streaming manner using a Python script to be provided
+This file should be POSTed to the `/insert/csv` API endpoint with a `Content-Type` of `text/csv`. This can be done in a streaming manner using a Python script to be provided
 
-The `/insert_streaming` API endpoint accepts several URL parameters which provide metadata of the stream being uploaded:
+The `/insert/csv` API endpoint accepts several URL parameters which provide metadata of the stream being uploaded:
 
 - `source` (required): the SourceName of the stream
 - `name` (required): the name of the stream
