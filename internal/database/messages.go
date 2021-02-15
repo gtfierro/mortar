@@ -199,6 +199,12 @@ type ArrayDataset struct {
 	idx        int
 }
 
+func NewArrayDataset() *ArrayDataset {
+	return &ArrayDataset{
+		idx: -1,
+	}
+}
+
 func (d *ArrayDataset) String() string {
 	return fmt.Sprintf("Dataset[SourceName=%s, Name=%s, # Readings=%d]", d.SourceName, d.Name, len(d.Readings))
 }
@@ -288,6 +294,7 @@ func (agg AggregationType) toSQL(field string) string {
 
 type Query struct {
 	Ids               []int64
+	Uris              []string
 	Sources           []string
 	Sparql            string
 	Start             time.Time
@@ -308,11 +315,11 @@ func (q *Query) FromURLParams(vals url.Values) error {
 			return fmt.Errorf("Invalid query '%s': %w", _sparql, err)
 		}
 	}
-	// TODO: sparql, err := url.QueryUnescape(q.Sparql)
+	q.Uris = vals["uri"]
 
 	_ids, ok := vals["id"]
-	if !ok && len(q.Sparql) == 0 {
-		return errors.New("Query needs ids")
+	if !ok && len(q.Uris) == 0 && len(q.Sparql) == 0 {
+		return errors.New("Query needs ids or URIs")
 	}
 	q.Ids = make([]int64, len(_ids))
 	for idx, _id := range _ids {

@@ -5,12 +5,14 @@ import re
 import functools
 import csv
 import os
+import urllib.parse
 from datetime import datetime
 import requests
 from requests.utils import quote
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
 import pyarrow as pa
 import pandas as pd
+from brickschema.namespaces import BRICK, RDF, TAG
 import logging
 from pymortar.mortar_pb2 import QualifyRequest, FetchRequest, View, DataFrame, Timeseries
 from pymortar.mortar_pb2 import AGG_FUNC_RAW  as RAW
@@ -61,18 +63,56 @@ class Client:
                         registered = True
                     w.writerow([row['time'], row['value']])
 
-                url = f'{self._endpoint}/insert_streaming?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}'
+                url = f'{self._endpoint}/insert/csv?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}'
 
                 b = io.BytesIO(buf.getvalue().encode('utf8'))
                 resp = requests.post(url, data=b, headers={'Content-Type': 'text/csv'})
                 if not resp.ok:
                     raise Exception(resp.content)
 
+    def new_stream(self, sourcename, name, units, brick_uri=None, brick_class=None):
+        """
+        Idempotently registers a new stream and returns a reference to that stream
+        """
+        d = {
+            "SourceName": sourcename,
+            "Name": name,
+            "Units": units,
+        }
+        if brick_uri is not None:
+            d["BrickURI"] = brick_uri
+        if brick_class is not None:
+            d["BrickClass"] = brick_class
+        logging.info(f"Registering new stream {d} to {self._endpoint}/register_stream")
+        r = requests.post(f"{self._endpoint}/register_stream", json=d)
+        if not r.ok:
+            raise Exception(r.content)
+        return Stream(self, d)
+
+    def add_data(self, sourcename, name, readings):
+        """
+        Adds data to the stream with the given name
+
+        Args:
+            sourcename (str): name of the "group" for this name
+            name (str): name of the st ream
+            readings (list): each entry is a (RFC 3339 timestamp, float value) tuple
+        """
+        logging.info(f"Uploading {len(readings)} readings to {self._endpoint}/insert/data")
+        d = {
+            "SourceName": sourcename,
+            "Name": name,
+            "Readings": readings,
+        }
+        resp = requests.post(f'{self._endpoint}/insert/data', json=d)
+        if not resp.ok:
+            raise Exception(resp.content)
+
     def load_triple_file(self, source, filename):
-        logging.info(f"Uploading {filename} to {self._endpoint}/insert_triple_file")
+        logging.info(f"Uploading {filename} to {self._endpoint}/insert/metadata")
         basename = os.path.basename(filename).strip('.ttl')
         with open(filename, 'rb') as f:
-            resp = requests.post(f'{self._endpoint}/insert_triple_file?source={source}&origin={basename}', data=f.read())
+            resp = requests.post(f'{self._endpoint}/insert/metadata?source={source}&origin={basename}', data=f.read())
             if not resp.ok:
                 raise Exception(resp.content)
 
@@ -95,7 +135,36 @@ class Client:
     #     resp = requests.get(f'http://localhost:5001/query?sparql={sparql}&start={start}')
     #     r = pa.ipc.open_stream(resp.content)
 
-    def data(self, sparql, source=None, start=None, end=None, agg=None, window=None):
+    def data_uris(self, uris, start=None, end=None, agg=None, window=None):
+        parts = []
+        if start is not None:
+            if isinstance(start, datetime):
+                parts.append(f"start={start.localize().strftime('%Y-%m-%dT%H:%M:%SZ')}")
+            else:
+                parts.append(f"start={start}")
+        else:
+            parts.append("start=1970-01-01T00:00:00Z")
+
+        for uri in uris:
+            uri = urllib.parse.quote_plus(uri)
+            parts.append(f"uri={uri}")
+
+        query_string = '&'.join(parts)
+        if agg is not None and window is not None:
+            resp = requests.get(f'{self._endpoint}/query?{query_string}&agg={agg}&window={window}')
+        else:
+            resp = requests.get(f'{self._endpoint}/query?{query_string}')
+
+        buf = io.BytesIO(resp.content)
+        # read metadata first
+        r = pa.ipc.open_stream(buf)
+        md = r.read_pandas()
+        # then read data
+        r = pa.ipc.open_stream(buf)
+        df = r.read_pandas()
+        return Dataset(None, md, df)
+
+    def data_sparql(self, sparql, source=None, start=None, end=None, agg=None, window=None):
         parts = []
         if start is not None:
             if isinstance(start, datetime):
@@ -209,3 +278,44 @@ class Dataset:
     @property
     def data(self):
         return self._data
+
+class Stream:
+    def __init__(self, client, defn):
+        self._srcname = defn.get("SourceName")
+        self._name = defn.get("Name")
+        self._units = defn.get("Units")
+        self._uri = defn.get("BrickURI")
+        self._class = defn.get("BrickClass")
+        self.client = client
+
+    @property
+    def source(self):
+        return self._srcname
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def units(self):
+        return self._units
+
+    @property
+    def uri(self):
+        return self._uri
+
+    @property
+    def type(self):
+        return self._class
+
+    def add_data(self, readings):
+        """
+        Uploads new timeseries data to the server
+
+        Args:
+            readings (list): each entry is a (RFC 3339 timestamp, float value) tuple
+        """
+        self.client.add_data(self.source, self.name, readings)
+
+    def get_data(self, start=None, end=None, agg=None, window=None):
+        return self.client.data_uris([self.uri], start, end, agg, window)

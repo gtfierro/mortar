@@ -76,9 +76,9 @@ func (srv *Server) ServeHTTP() error {
 	log := logging.FromContext(srv.ctx)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/register_stream", srv.registerStream)
-	mux.HandleFunc("/insert_bulk", srv.insertHistoricalData)
-	mux.HandleFunc("/insert_streaming", srv.insertHistoricalDataStreaming)
-	mux.HandleFunc("/insert_triple_file", srv.insertTriplesFromFile)
+	mux.HandleFunc("/insert/data", srv.insertJSONData)
+	mux.HandleFunc("/insert/csv", srv.insertCSVFile)
+	mux.HandleFunc("/insert/metadata", srv.insertTriplesFromFile)
 	mux.HandleFunc("/query", srv.readDataChunk)
 	mux.HandleFunc("/sparql", srv.serveSPARQLQuery)
 	mux.HandleFunc("/qualify", srv.handleQualify)
@@ -122,15 +122,15 @@ func (srv *Server) registerStream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) insertJSONData(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 
 	ctx, cancel := context.WithTimeout(srv.ctx, config.DataWriteTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
-	var ds database.ArrayDataset
-	if err := json.NewDecoder(r.Body).Decode(&ds); err != nil {
+	var ds = database.NewArrayDataset()
+	if err := json.NewDecoder(r.Body).Decode(ds); err != nil {
 		log.Errorf("Could not parse dataset %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -151,14 +151,14 @@ func (srv *Server) insertHistoricalData(w http.ResponseWriter, r *http.Request) 
 	//}
 
 	// insert data
-	if err := srv.db.InsertHistoricalData(ctx, &ds); err != nil {
+	if err := srv.db.InsertHistoricalData(ctx, ds); err != nil {
 		log.Errorf("Could not insert data %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (srv *Server) insertHistoricalDataStreaming(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) insertCSVFile(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 	ctx, cancel := context.WithTimeout(srv.ctx, config.DataWriteTimeout)
 	defer cancel()

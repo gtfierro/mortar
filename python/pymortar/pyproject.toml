@@ -11,9 +11,10 @@ requests = "^2.25.0"
 pyarrow = "^2.0.0"
 pandas = "^1.1.5"
 googleapis-common-protos = "^1.52.0"
+brickschema = "0.3.0a4"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^6.2"
 
 [build-system]
 requires = ["poetry>=0.12"]

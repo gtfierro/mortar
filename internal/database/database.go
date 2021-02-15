@@ -149,7 +149,10 @@ func (db *TimescaleDatabase) RegisterStream(ctx context.Context, stream Stream) 
 		}
 
 		res, err := txn.Exec(ctx, `INSERT INTO streams(id, name, source, units, brick_uri, brick_class)
-								 VALUES(DEFAULT, $1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+								 VALUES(DEFAULT, $1, $2, $3, $4, $5) ON CONFLICT (source, name) DO UPDATE
+								 SET brick_uri = EXCLUDED.brick_uri,
+								     brick_class = EXCLUDED.brick_class,
+									 units = EXCLUDED.units`,
 			stream.Name, stream.SourceName, stream.Units, brickURI, brickClass)
 		if err != nil {
 			return fmt.Errorf("Could not register stream: %w", err)
@@ -243,6 +246,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer, q *Query) error {
 	// if a sparql query is provided, then execute it, join on 'streams' to get all of the ids
 	// implied by the query, and use those to determine the ids in the 'data' table
+	var err error
 	if len(q.Sparql) > 0 {
 		fmt.Println("SPARQL", q.Sparql)
 		// TODO: get all graphs
@@ -276,7 +280,23 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 			}
 			q.Ids = append(q.Ids, i)
 		}
-
+	} else if len(q.Uris) > 0 {
+		var rows pgx.Rows
+		if len(q.Sources) > 0 {
+			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1)) AND source = ANY($2)`, q.Uris, q.Sources)
+		} else {
+			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1))`, q.Uris)
+		}
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var i int64
+			if err := rows.Scan(&i); err != nil {
+				return fmt.Errorf("Could not query: %w", err)
+			}
+			q.Ids = append(q.Ids, i)
+		}
 	}
 
 	metadataFields := []arrow.Field{
@@ -358,13 +378,13 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	)
 	// write aggregation query if Query contains it
 	if q.AggregationFunc != nil && q.AggregationWindow != nil {
-		sql := fmt.Sprintf(`SELECT time_bucket('%s', time) as time, %s, COALESCE(brick_uri, name) 
-							FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3) 
+		sql := fmt.Sprintf(`SELECT time_bucket('%s', time) as time, %s, COALESCE(brick_uri, name)
+							FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
 							GROUP BY time, stream_id
 							ORDER BY stream_id, time`, *q.AggregationWindow, q.AggregationFunc.toSQL("value"))
 		rows, err = db.pool.Query(ctx, sql, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	} else {
-		rows, err = db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name) 
+		rows, err = db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name)
 										FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
 										ORDER BY stream_id, time`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	}
