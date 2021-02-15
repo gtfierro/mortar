@@ -240,10 +240,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 	return err
 }
 
-func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
-	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
-	defer cancel()
-
+func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer, q *Query) error {
 	// if a sparql query is provided, then execute it, join on 'streams' to get all of the ids
 	// implied by the query, and use those to determine the ids in the 'data' table
 	if len(q.Sparql) > 0 {
@@ -253,6 +250,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		if err != nil {
 			return err
 		}
+
 		var uris []string
 		for _, row := range res.Results.Bindings {
 			for _, value := range row {
@@ -278,6 +276,64 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 			}
 			q.Ids = append(q.Ids, i)
 		}
+
+	}
+
+	metadataFields := []arrow.Field{
+		{Name: "brick_class", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "brick_uri", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "units", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "name", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "stream_id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
+	}
+	mdsch := arrow.NewSchema(metadataFields, nil)
+	mdbldr := array.NewRecordBuilder(memory.DefaultAllocator, mdsch)
+	defer mdbldr.Release()
+
+	classes := mdbldr.Field(0).(*array.StringBuilder)
+	uris := mdbldr.Field(1).(*array.StringBuilder)
+	units := mdbldr.Field(2).(*array.StringBuilder)
+	names := mdbldr.Field(3).(*array.StringBuilder)
+	ids := mdbldr.Field(4).(*array.Int64Builder)
+	mdWriter := ipc.NewWriter(w, ipc.WithSchema(mdbldr.Schema()))
+
+	// query stream metadata
+	rows, err := db.pool.Query(ctx, `SELECT DISTINCT stream_id, brick_class, brick_uri, units, name FROM unified WHERE stream_id = ANY($1)`, q.Ids)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id int64
+		var brick_class string
+		var brick_uri string
+		var unit string
+		var name string
+		if err := rows.Scan(&id, &brick_class, &brick_uri, &unit, &name); err != nil {
+			return fmt.Errorf("Could not query: %w", err)
+		}
+		classes.Append(brick_class)
+		uris.Append(brick_uri)
+		units.Append(unit)
+		names.Append(name)
+		ids.Append(id)
+	}
+
+	mdrec := mdbldr.NewRecord()
+	if err := mdWriter.Write(mdrec); err != nil {
+		return fmt.Errorf("Could not write record %w", err)
+	}
+	defer mdrec.Release()
+
+	// finish sending metadata
+	return mdWriter.Close()
+}
+
+func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
+	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
+	defer cancel()
+
+	if err := db.writeMetadataArrow(ctx, w, q); err != nil {
+		return fmt.Errorf("Error processing metadata: %w", err)
 	}
 
 	// TODO: need to do a better job of streaming this data out
@@ -285,20 +341,14 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	sch := arrow.NewSchema([]arrow.Field{
 		{Name: "time", Type: arrow.FixedWidthTypes.Timestamp_ns, Nullable: false},
 		{Name: "value", Type: arrow.PrimitiveTypes.Float64, Nullable: false},
-		//{Name: "id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
 		{Name: "id", Type: arrow.BinaryTypes.String, Nullable: false},
-		{Name: "unit", Type: arrow.BinaryTypes.String, Nullable: true},
-		{Name: "type", Type: arrow.BinaryTypes.String, Nullable: true},
 	}, nil)
 	bldr := array.NewRecordBuilder(memory.DefaultAllocator, sch)
 	defer bldr.Release()
 
 	rTimes := bldr.Field(0).(*array.TimestampBuilder)
 	rValues := bldr.Field(1).(*array.Float64Builder)
-	// rIds := bldr.Field(2).(*array.Int64Builder)
 	rNames := bldr.Field(2).(*array.StringBuilder)
-	rUnit := bldr.Field(3).(*array.StringBuilder)
-	rType := bldr.Field(4).(*array.StringBuilder)
 
 	arrowWriter := ipc.NewWriter(w, ipc.WithSchema(bldr.Schema()))
 
@@ -306,17 +356,15 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		rows pgx.Rows
 		err  error
 	)
-
 	// write aggregation query if Query contains it
 	if q.AggregationFunc != nil && q.AggregationWindow != nil {
-		sql := fmt.Sprintf(`SELECT time_bucket('%s', time) as time, %s, 
-								   COALESCE(brick_uri, name), units, brick_class 
+		sql := fmt.Sprintf(`SELECT time_bucket('%s', time) as time, %s, COALESCE(brick_uri, name) 
 							FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3) 
-							GROUP BY time, stream_id, units, brick_class, brick_uri, name
+							GROUP BY time, stream_id
 							ORDER BY stream_id, time`, *q.AggregationWindow, q.AggregationFunc.toSQL("value"))
 		rows, err = db.pool.Query(ctx, sql, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	} else {
-		rows, err = db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name), units, brick_class 
+		rows, err = db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name) 
 										FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
 										ORDER BY stream_id, time`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	}
@@ -329,18 +377,13 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 			t time.Time
 			v float64
 			s string
-			u string
-			c string
 		)
-		if err := rows.Scan(&t, &v, &s, &u, &c); err != nil {
+		if err := rows.Scan(&t, &v, &s); err != nil {
 			return fmt.Errorf("Could not query %w", err)
 		}
 		rTimes.Append(arrow.Timestamp(t.UnixNano()))
 		rValues.Append(v)
-		//rIds.Append(i)
 		rNames.Append(s)
-		rUnit.Append(u)
-		rType.Append(c)
 
 		// TODO: measure/estimate size
 		if rValues.Len() > 2000000 { // 2 million readings

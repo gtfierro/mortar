@@ -12,6 +12,9 @@ import (
 	"time"
 
 	"github.com/knakk/rdf"
+	"github.com/knakk/sparql"
+
+	"github.com/apache/arrow/go/arrow"
 )
 
 // Stream holds metadata associated with a timeseries source
@@ -516,4 +519,17 @@ func ParseDuration(expr string) (time.Duration, error) {
 		err = fmt.Errorf("Invalid unit %v. Must be h,m,s,us,ms,ns,d", units)
 	}
 	return d, err
+}
+
+func makeStringArrowSchema(names []string) *arrow.Schema {
+	var fields []arrow.Field
+	for _, varname := range names {
+		fields = append(fields, arrow.Field{Name: varname, Type: arrow.BinaryTypes.String, Nullable: true})
+	}
+	return arrow.NewSchema(fields, nil)
+}
+
+// build an arrow schema from a sparql query result
+func makeArrowSchemaFromSPARQL(res *sparql.Results) *arrow.Schema {
+	return makeStringArrowSchema(res.Head.Vars)
 }
