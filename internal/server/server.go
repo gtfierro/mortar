@@ -247,6 +247,8 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: is there a (standard) way to communicate errors over the Arrow IPC
+	// mechanism rather than falling back to an HTTP status code?
 	err := srv.db.ReadDataChunk(ctx, w, &query)
 	if err != nil {
 		log.Errorf("Problem querying data: %s", err)

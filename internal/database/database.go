@@ -274,7 +274,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		for rows.Next() {
 			var i int64
 			if err := rows.Scan(&i); err != nil {
-				return fmt.Errorf("Could not query %w", err)
+				return fmt.Errorf("Could not query: %w", err)
 			}
 			q.Ids = append(q.Ids, i)
 		}
@@ -318,7 +318,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	} else {
 		rows, err = db.pool.Query(ctx, `SELECT time, value, COALESCE(brick_uri, name), units, brick_class 
 										FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
-										ORDER BY time stream_id, time`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
+										ORDER BY stream_id, time`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	}
 
 	if err != nil {
