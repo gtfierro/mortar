@@ -1,4 +1,4 @@
-__version__ = '0.1.0'
+__version__ = "0.1.0"
 
 import io
 import re
@@ -14,8 +14,14 @@ import pyarrow as pa
 import pandas as pd
 from brickschema.namespaces import BRICK, RDF, TAG
 import logging
-from pymortar.mortar_pb2 import QualifyRequest, FetchRequest, View, DataFrame, Timeseries
-from pymortar.mortar_pb2 import AGG_FUNC_RAW  as RAW
+from pymortar.mortar_pb2 import (
+    QualifyRequest,
+    FetchRequest,
+    View,
+    DataFrame,
+    Timeseries,
+)
+from pymortar.mortar_pb2 import AGG_FUNC_RAW as RAW
 from pymortar.mortar_pb2 import AGG_FUNC_MEAN as MEAN
 from pymortar.mortar_pb2 import AGG_FUNC_MIN as MIN
 from pymortar.mortar_pb2 import AGG_FUNC_MAX as MAX
@@ -42,12 +48,12 @@ def parse_aggfunc(aggfunc):
 
 class Client:
     def __init__(self, endpoint):
-        self._endpoint = endpoint.strip('/')
+        self._endpoint = endpoint.strip("/")
         self._sparql_endpoint = SPARQLStore(f"{self._endpoint}/sparql")
 
     def load_csv(self, filename):
         logging.info(f"Uploading {filename} to {self._endpoint}/insert_streaming")
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             with io.StringIO() as buf:
                 w = csv.writer(buf)
                 r = csv.DictReader(f)
@@ -55,18 +61,18 @@ class Client:
                 registered = False
                 for row in r:
                     if not registered:
-                        source = quote(row['site'])
-                        name = quote(row['label'])
-                        uri = quote(row['id'])
-                        btype = quote(row['type'])
-                        units = 'degF'
+                        source = quote(row["site"])
+                        name = quote(row["label"])
+                        uri = quote(row["id"])
+                        btype = quote(row["type"])
+                        units = "degF"
                         registered = True
-                    w.writerow([row['time'], row['value']])
+                    w.writerow([row["time"], row["value"]])
 
-                url = f'{self._endpoint}/insert/csv?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}'
+                url = f"{self._endpoint}/insert/csv?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}"
 
-                b = io.BytesIO(buf.getvalue().encode('utf8'))
-                resp = requests.post(url, data=b, headers={'Content-Type': 'text/csv'})
+                b = io.BytesIO(buf.getvalue().encode("utf8"))
+                resp = requests.post(url, data=b, headers={"Content-Type": "text/csv"})
                 if not resp.ok:
                     raise Exception(resp.content)
 
@@ -98,34 +104,43 @@ class Client:
             name (str): name of the st ream
             readings (list): each entry is a (RFC 3339 timestamp, float value) tuple
         """
-        logging.info(f"Uploading {len(readings)} readings to {self._endpoint}/insert/data")
+        logging.info(
+            f"Uploading {len(readings)} readings to {self._endpoint}/insert/data"
+        )
         d = {
             "SourceName": sourcename,
             "Name": name,
             "Readings": readings,
         }
-        resp = requests.post(f'{self._endpoint}/insert/data', json=d)
+        resp = requests.post(f"{self._endpoint}/insert/data", json=d)
         if not resp.ok:
             raise Exception(resp.content)
 
     def load_triple_file(self, source, filename):
         logging.info(f"Uploading {filename} to {self._endpoint}/insert/metadata")
-        basename = os.path.basename(filename).strip('.ttl')
-        with open(filename, 'rb') as f:
-            resp = requests.post(f'{self._endpoint}/insert/metadata?source={source}&origin={basename}', data=f.read())
+        basename = os.path.basename(filename).strip(".ttl")
+        with open(filename, "rb") as f:
+            resp = requests.post(
+                f"{self._endpoint}/insert/metadata?source={source}&origin={basename}",
+                data=f.read(),
+            )
             if not resp.ok:
                 raise Exception(resp.content)
 
     def sparql(self, query, sites=None):
         if sites is None:
             res = self._sparql_endpoint.query(query)
-            return pd.DataFrame.from_records(list(res), columns=[str(c) for c in res.vars])
+            return pd.DataFrame.from_records(
+                list(res), columns=[str(c) for c in res.vars]
+            )
         dfs = []
         for site in sites:
             ep = SPARQLStore(f"{self._endpoint}/sparql?site={site}")
             res = ep.query(query)
-            df = pd.DataFrame.from_records(list(res), columns=[str(c) for c in res.vars])
-            df['site'] = site
+            df = pd.DataFrame.from_records(
+                list(res), columns=[str(c) for c in res.vars]
+            )
+            df["site"] = site
             dfs.append(df)
         if len(dfs) == 0:
             return pd.DataFrame()
@@ -149,11 +164,13 @@ class Client:
             uri = urllib.parse.quote_plus(uri)
             parts.append(f"uri={uri}")
 
-        query_string = '&'.join(parts)
+        query_string = "&".join(parts)
         if agg is not None and window is not None:
-            resp = requests.get(f'{self._endpoint}/query?{query_string}&agg={agg}&window={window}')
+            resp = requests.get(
+                f"{self._endpoint}/query?{query_string}&agg={agg}&window={window}"
+            )
         else:
-            resp = requests.get(f'{self._endpoint}/query?{query_string}')
+            resp = requests.get(f"{self._endpoint}/query?{query_string}")
 
         buf = io.BytesIO(resp.content)
         # read metadata first
@@ -164,7 +181,9 @@ class Client:
         df = r.read_pandas()
         return Dataset(None, md, df)
 
-    def data_sparql(self, sparql, source=None, start=None, end=None, agg=None, window=None):
+    def data_sparql(
+        self, sparql, source=None, start=None, end=None, agg=None, window=None
+    ):
         parts = []
         if start is not None:
             if isinstance(start, datetime):
@@ -179,11 +198,15 @@ class Client:
 
         metadata = self.sparql(sparql, sites=[source] if source is not None else None)
 
-        query_string = '&'.join(parts)
+        query_string = "&".join(parts)
         if agg is not None and window is not None:
-            resp = requests.get(f'{self._endpoint}/query?sparql={sparql}&{query_string}&agg={agg}&window={window}')
+            resp = requests.get(
+                f"{self._endpoint}/query?sparql={sparql}&{query_string}&agg={agg}&window={window}"
+            )
         else:
-            resp = requests.get(f'{self._endpoint}/query?sparql={sparql}&{query_string}')
+            resp = requests.get(
+                f"{self._endpoint}/query?sparql={sparql}&{query_string}"
+            )
 
         buf = io.BytesIO(resp.content)
         # read metadata first
@@ -209,7 +232,7 @@ class Client:
             required_queries = [required_queries[q] for q in names]
         else:
             names = None
-        res = requests.post(f'{self._endpoint}/qualify', json=required_queries)
+        res = requests.post(f"{self._endpoint}/qualify", json=required_queries)
         return QualifyResult(res.json(), names=names)
 
     def fetch(self, query):
@@ -225,15 +248,19 @@ class Client:
         for df in query.dataFrames:
             newdfs = []
             for ts in df.timeseries:
-                viewquery = views[ts.view]['definition']
-                datavars = [x.strip('?') for x in ts.dataVars]
-                viewvars = views[ts.view]['results'].columns
+                viewquery = views[ts.view]["definition"]
+                datavars = [x.strip("?") for x in ts.dataVars]
+                viewvars = views[ts.view]["results"].columns
                 removevars = set(viewvars).difference(set(datavars))
                 for var in removevars:
-                    viewquery = viewquery.replace(f'?{var}', '', 1)
-                _, newdf = self.get_data_sparql(viewquery, agg=parse_aggfunc(df.aggregation), window=df.window)
+                    viewquery = viewquery.replace(f"?{var}", "", 1)
+                _, newdf = self.data_sparql(
+                    viewquery, agg=parse_aggfunc(df.aggregation), window=df.window
+                )
                 newdfs.append(newdf)
-            dfs[df.name] = functools.reduce(lambda x, y: pd.concat([x, y], axis=0), newdfs)
+            dfs[df.name] = functools.reduce(
+                lambda x, y: pd.concat([x, y], axis=0), newdfs
+            )
         return views, dfs
 
 
@@ -245,7 +272,9 @@ class QualifyResult:
             columns = [f"Query_{i}" for i in range(num_queries)]
         else:
             columns = names
-        self._df = pd.DataFrame(self.resp.values(), columns=columns, index=self.resp.keys()).__repr__()
+        self._df = pd.DataFrame(
+            self.resp.values(), columns=columns, index=self.resp.keys()
+        ).__repr__()
 
     @property
     def sites(self):
@@ -278,6 +307,7 @@ class Dataset:
     @property
     def data(self):
         return self._data
+
 
 class Stream:
     def __init__(self, client, defn):
