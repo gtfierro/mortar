@@ -236,8 +236,20 @@ class Client:
         return QualifyResult(res.json(), names=names)
 
     def fetch(self, query):
+        """
+        Calls the Mortar API Fetch command
+
+        Args:
+            query (pymortar.FetchRequest): Mortar API fetch struct
+
+        Returns:
+            views (dict of name to DataFrame): SPARQL query results from FetchRequest views
+            metadata (dict of name to DataFrame): Metadata table describing all data streams
+            dataframes (dict of name to DataFrame): Actual timeseries data
+        """
         views = {}
         dfs = {}
+        metadata = {}
         for view in query.views:
             # view.name
             # view.definition
@@ -254,20 +266,28 @@ class Client:
                 removevars = set(viewvars).difference(set(datavars))
                 for var in removevars:
                     viewquery = viewquery.replace(f"?{var}", "", 1)
-                _, newdf = self.data_sparql(
+                res = self.data_sparql(
                     viewquery, agg=parse_aggfunc(df.aggregation), window=df.window
                 )
-                newdfs.append(newdf)
+                newdfs.append(res.data)
+            metadata[df.name] = res.streams
             dfs[df.name] = functools.reduce(
                 lambda x, y: pd.concat([x, y], axis=0), newdfs
             )
-        return views, dfs
+        return views, metadata, dfs
+
+
+class FetchResult:
+    pass
 
 
 class QualifyResult:
     def __init__(self, response, names):
         self.resp = response
-        num_queries = len(list(self.resp.values())[0])
+        vals = list(self.resp.values())
+        if len(vals) == 0:
+            raise Exception("Empty results")
+        num_queries = len(vals[0])
         if names is None:
             columns = [f"Query_{i}" for i in range(num_queries)]
         else:

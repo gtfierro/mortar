@@ -38,7 +38,7 @@ request = pymortar.FetchRequest(
                 name="data1",
                 aggregation=pymortar.MAX,
                 window="15m",
-                timeseries = [
+                timeseries=[
                     pymortar.Timeseries(
                         view="airtemp_sensors",
                         dataVars=["?sensor"],
@@ -47,5 +47,7 @@ request = pymortar.FetchRequest(
             )
         ]
 )
-resp = c.fetch(request)
-print(resp)
+(views, metadata, dataframes) = c.fetch(request)
+print(views)
+print(metadata)
+print(dataframes)
