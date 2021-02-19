@@ -64,8 +64,8 @@ class Client:
                         source = quote(row["site"])
                         name = quote(row["label"])
                         uri = quote(row["id"])
-                        btype = quote(row["type"])
-                        units = "degF"
+                        btype = quote(row.get("type", BRICK.Point))
+                        units = quote(row.get("units", "unknown"))
                         registered = True
                     w.writerow([row["time"], row["value"]])
 
