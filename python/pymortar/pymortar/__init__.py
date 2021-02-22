@@ -118,7 +118,7 @@ class Client:
 
     def load_triple_file(self, source, filename):
         logging.info(f"Uploading {filename} to {self._endpoint}/insert/metadata")
-        basename = os.path.basename(filename).strip(".ttl")
+        basename = os.path.basename(filename)
         with open(filename, "rb") as f:
             resp = requests.post(
                 f"{self._endpoint}/insert/metadata?source={source}&origin={basename}",
