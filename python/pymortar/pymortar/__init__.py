@@ -119,13 +119,30 @@ class Client:
     def load_triple_file(self, source, filename):
         logging.info(f"Uploading {filename} to {self._endpoint}/insert/metadata")
         basename = os.path.basename(filename)
+        _, fformat = os.path.splitext(basename)
         with open(filename, "rb") as f:
             resp = requests.post(
-                f"{self._endpoint}/insert/metadata?source={source}&origin={basename}",
+                f"{self._endpoint}/insert/metadata?source={source}&origin={basename}&format={fformat}",
                 data=f.read(),
             )
             if not resp.ok:
                 raise Exception(resp.content)
+
+    # def load_graph(self, source, graph):
+    #     """
+    #     Args:
+    #         graph (rdflib.Graph): graph of triples to insert
+    #     """
+    #     logging.info(f"Uploading {filename} to {self._endpoint}/insert/metadata")
+    #     basename = os.path.basename(filename)
+    #     _, fformat = os.path.splitext(basename)
+    #     with open(filename, "rb") as f:
+    #         resp = requests.post(
+    #             f"{self._endpoint}/insert/metadata?source={source}&origin={basename}&format={format}",
+    #             data=f.read(),
+    #         )
+    #         if not resp.ok:
+    #             raise Exception(resp.content)
 
     def sparql(self, query, sites=None):
         if sites is None:
