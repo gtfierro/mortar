@@ -380,7 +380,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	if q.AggregationFunc != nil && q.AggregationWindow != nil {
 		sql := fmt.Sprintf(`SELECT time_bucket('%s', time) as time, %s, COALESCE(brick_uri, name)
 							FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
-							GROUP BY time, stream_id
+							GROUP BY time, stream_id, brick_uri, name
 							ORDER BY stream_id, time`, *q.AggregationWindow, q.AggregationFunc.toSQL("value"))
 		rows, err = db.pool.Query(ctx, sql, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	} else {
