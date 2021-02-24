@@ -205,17 +205,19 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 		}
 
 		ds.SetId(stream_id)
-		_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
+		_, err = txn.Exec(ctx, "CREATE TEMPORARY TABLE data_temp AS SELECT * FROM data WITH NO DATA;")
+		//_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
 		if err != nil {
 			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
 		}
 
-		num, err = txn.CopyFrom(ctx, pgx.Identifier{"datat"}, []string{"time", "stream_id", "value"}, ds)
+		num, err = txn.CopyFrom(ctx, pgx.Identifier{"data_temp"}, []string{"time", "stream_id", "value"}, ds)
 		if err != nil {
 			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
 		}
 
-		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
+		_, err = txn.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>{'value'});`")
+		//		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
 		if err != nil {
 			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
 		}

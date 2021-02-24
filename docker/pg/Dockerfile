@@ -36,6 +36,8 @@ RUN timescaledb-tune --quiet --yes --conf-path=/data/postgresql.conf
 # Add initialization scripts
 ADD install_timescale.sh /docker-entrypoint-initdb.d/001_install.sh
 ADD setup.sql /docker-entrypoint-initdb.d/002_setup.sql
+# from https://github.com/timescale/timescaledb-extras/blob/master/backfill.sql
+ADD backfill.sql /docker-entrypoint-initdb.d/003_backfill.sql
 
 RUN pg_lsclusters
 
