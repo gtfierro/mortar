@@ -204,7 +204,7 @@ BEGIN
     IF UPPER(on_conflict_action) = 'NOTHING' THEN
         on_conflict_clause = 'ON CONFLICT DO NOTHING';
     ELSEIF UPPER(on_conflict_action) = 'UPDATE' THEN
-        SELECT 'ON CONFLICT DO UPDATE SET ' || STRING_AGG(FORMAT('%1$I = EXCLUDED.%1$I', on_conflict_update_column), ', ')
+        SELECT 'ON CONFLICT (time, stream_id) DO UPDATE SET ' || STRING_AGG(FORMAT('%1$I = EXCLUDED.%1$I', on_conflict_update_column), ', ')
         FROM UNNEST(on_conflict_update_columns) AS on_conflict_update_column INTO on_conflict_clause;
     END IF;
 
