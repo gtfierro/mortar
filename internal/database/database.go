@@ -216,7 +216,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
 		}
 
-		_, err = txn.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>{'value'});`")
+		_, err = txn.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>array['value']);`")
 		//		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
 		if err != nil {
 			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
