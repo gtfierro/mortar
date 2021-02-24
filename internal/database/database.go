@@ -195,49 +195,76 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 	}
 
 	var num int64 = 0
-	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
-		// check valid stream
-		row := txn.QueryRow(ctx, `SELECT id FROM streams WHERE source=$1 AND name=$2`, ds.GetSource(), ds.GetName())
-		var stream_id int
-		err := row.Scan(&stream_id)
-		if err != nil {
-			return fmt.Errorf("No such stream (SourceName: %s, Name: %s): %w", ds.GetSource(), ds.GetName(), err)
-		}
 
-		ds.SetId(stream_id)
-		_, err = txn.Exec(ctx, "CREATE TEMPORARY TABLE data_temp AS SELECT * FROM data WITH NO DATA;")
-		//_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
-		if err != nil {
-			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
-		}
+	row := db.pool.QueryRow(ctx, `SELECT id FROM streams WHERE source=$1 AND name=$2`, ds.GetSource(), ds.GetName())
+	var stream_id int
+	err := row.Scan(&stream_id)
+	if err != nil {
+		return fmt.Errorf("No such stream (SourceName: %s, Name: %s): %w", ds.GetSource(), ds.GetName(), err)
+	}
 
-		num, err = txn.CopyFrom(ctx, pgx.Identifier{"data_temp"}, []string{"time", "stream_id", "value"}, ds)
-		if err != nil {
-			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
-		}
+	ds.SetId(stream_id)
+	_, err = db.pool.Exec(ctx, "CREATE TEMPORARY TABLE data_temp AS SELECT * FROM data WITH NO DATA;")
+	//_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
+	if err != nil {
+		return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	}
 
-		_, err = txn.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>array['value']);")
-		//		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
-		if err != nil {
-			return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
-		}
+	num, err = db.pool.CopyFrom(ctx, pgx.Identifier{"data_temp"}, []string{"time", "stream_id", "value"}, ds)
+	if err != nil {
+		return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	}
 
-		//_, err = txn.Exec(ctx, "DROP TABLE datat")
-		//if err != nil {
-		//	return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
-		//}
+	_, err = db.pool.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>array['value']);")
+	//		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
+	if err != nil {
+		return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	}
 
-		//for rdg := range ds.GetReadings() {
-		//	_, err := txn.Exec(ctx, `INSERT INTO data(time, stream_id, value) VALUES($1, $2, $3)  ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value;`, rdg.Time, stream_id, rdg.Value)
-		//	if err != nil {
-		//		return fmt.Errorf("Cannot insert reading %v for id %d: %w", rdg, stream_id, err)
-		//	}
-		//	num++
-		//}
+	//err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
+	//	// check valid stream
+	//	row := txn.QueryRow(ctx, `SELECT id FROM streams WHERE source=$1 AND name=$2`, ds.GetSource(), ds.GetName())
+	//	var stream_id int
+	//	err := row.Scan(&stream_id)
+	//	if err != nil {
+	//		return fmt.Errorf("No such stream (SourceName: %s, Name: %s): %w", ds.GetSource(), ds.GetName(), err)
+	//	}
 
-		return nil
+	//	ds.SetId(stream_id)
+	//	_, err = txn.Exec(ctx, "CREATE TEMPORARY TABLE data_temp AS SELECT * FROM data WITH NO DATA;")
+	//	//_, err = txn.Exec(ctx, "CREATE TEMP TABLE datat(time TIMESTAMPTZ, stream_id INTEGER, value FLOAT)")
+	//	if err != nil {
+	//		return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	//	}
 
-	})
+	//	num, err = txn.CopyFrom(ctx, pgx.Identifier{"data_temp"}, []string{"time", "stream_id", "value"}, ds)
+	//	if err != nil {
+	//		return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	//	}
+
+	//	_, err = txn.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>array['value']);")
+	//	//		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
+	//	if err != nil {
+	//		return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	//	}
+	//	// TODO: the Call has its own transcation; need to move out
+
+	//	//_, err = txn.Exec(ctx, "DROP TABLE datat")
+	//	//if err != nil {
+	//	//	return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
+	//	//}
+
+	//	//for rdg := range ds.GetReadings() {
+	//	//	_, err := txn.Exec(ctx, `INSERT INTO data(time, stream_id, value) VALUES($1, $2, $3)  ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value;`, rdg.Time, stream_id, rdg.Value)
+	//	//	if err != nil {
+	//	//		return fmt.Errorf("Cannot insert reading %v for id %d: %w", rdg, stream_id, err)
+	//	//	}
+	//	//	num++
+	//	//}
+
+	//	return nil
+
+	//})
 
 	if err == nil {
 		log.Infof("Inserted %5d readings: %s", num, ds)
