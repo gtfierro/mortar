@@ -27,16 +27,16 @@ services:
       - MORTAR_DB_HOST=pg
       - MORTAR_DB_PORT=5432
       - MORTAR_DB_DATABASE=mortar
-      - MORTAR_DB_USER=mortarchangeme
-      - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+      - mortarchangeme
+      - mortarpasswordchangeme
       - MORTAR_REASONER_ADDRESS=reasoner:3030
+      - MORTAR_REASONER_ADDRESS=mortar_reasoner_1:3030
     ports:
       - "5001:5001"
         # - "2112:2112"
   prometheus:
     image: prom/prometheus:latest
     restart: always
-    container_name: prometheus
     ports:
       - 9090:9090
     command:
@@ -48,7 +48,6 @@ services:
   cadvisor:
     image: google/cadvisor:latest
     restart: always
-    container_name: cadvisor
     ports:
       - 8080:8080
     volumes:
