@@ -20,7 +20,7 @@ SELECT * FROM create_hypertable('data', 'time');
 
 ALTER TABLE  data
   SET (timescaledb.compress,
-      -- timescaledb.compress_orderby = 'time DESC',
+      timescaledb.compress_orderby = 'time DESC',
       timescaledb.compress_segmentby = 'stream_id');
 -- Timescale 1.x
 -- SELECT add_compress_chunks_policy('data', INTERVAL '14 days');

@@ -218,6 +218,8 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 	//	return fmt.Errorf("Cannot insert readings for id %d: %w", stream_id, err)
 	//}
 
+	// TODO: need to check if *all* the affected segments for the temp table are decompressed at once or if it is one at a time --- where does the time go and why does this time out? Does it time out for smaller batches?
+
 	//log.Infof("Call decompress backfill")
 	//_, err = db.pool.Exec(ctx, "CALL decompress_backfill(staging_table=>'data_temp', destination_hypertable=>'data', on_conflict_action=>'UPDATE', on_conflict_update_columns=>array['value']);")
 	////		_, err = txn.Exec(ctx, "INSERT INTO data SELECT * FROM datat ON CONFLICT (time, stream_id) DO UPDATE SET value = EXCLUDED.value")
