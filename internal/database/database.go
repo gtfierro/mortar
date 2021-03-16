@@ -352,8 +352,7 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	ids := mdbldr.Field(4).(*array.Int64Builder)
 	mdWriter := ipc.NewWriter(w, ipc.WithSchema(mdbldr.Schema()))
 
-	// query stream metadata
-	rows, err := db.pool.Query(ctx, `SELECT DISTINCT stream_id, brick_class, brick_uri, units, name FROM unified WHERE stream_id = ANY($1)`, q.Ids)
+	rows, err := db.pool.Query(ctx, `SELECT DISTINCT id, brick_class, brick_uri, units, name FROM streams WHERE id = ANY($1)`, q.Ids)
 	if err != nil {
 		return err
 	}
@@ -374,10 +373,10 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	}
 
 	mdrec := mdbldr.NewRecord()
+	defer mdrec.Release()
 	if err := mdWriter.Write(mdrec); err != nil {
 		return fmt.Errorf("Could not write record %w", err)
 	}
-	defer mdrec.Release()
 
 	// finish sending metadata
 	return mdWriter.Close()
