@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "2.0.0"
 
 import io
 import re
@@ -6,6 +6,7 @@ import functools
 import csv
 import os
 import urllib.parse
+# import sqlite3
 from datetime import datetime
 import requests
 from requests.utils import quote
@@ -50,6 +51,9 @@ class Client:
     def __init__(self, endpoint):
         self._endpoint = endpoint.strip("/")
         self._sparql_endpoint = SPARQLStore(f"{self._endpoint}/sparql")
+        # self._cache = sqlite3.connect(".mortar_cache.db")
+        # cur = self._cache.cursor()
+        # cur.execute('''CREATE TABLE IF NOT EXISTS downloaded(time TIMESTAMP, query STRING, data BLOB)''')
 
     def load_csv(self, filename):
         logging.info(f"Uploading {filename} to {self._endpoint}/insert_streaming")
@@ -212,6 +216,14 @@ class Client:
                 params['start'] = start
         else:
             params['start'] = '1970-01-01T00:00:00Z'
+
+        if end is not None:
+            if isinstance(end, datetime):
+                params['end'] = end.localize().strftime('%Y-%m-%dT%H:%M:%SZ')
+            else:
+                params['end'] = end
+        else:
+            params['end'] = '2100-01-01T00:00:00Z'
 
         if source is not None:
             params['source'] = source
