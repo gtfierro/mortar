@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -239,6 +238,8 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	defer r.Body.Close()
 
+	start := time.Now()
+
 	var query database.Query
 	if err := query.FromURLParams(r.URL.Query()); err != nil {
 		rerr := fmt.Errorf("Could not read source from params: %w", err)
@@ -254,6 +255,7 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Problem querying data: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	fmt.Println("Query took", time.Since(start))
 }
 
 func (srv *Server) insertTriplesFromFile(w http.ResponseWriter, r *http.Request) {
@@ -308,9 +310,9 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, rerr.Error(), http.StatusBadRequest)
 		return
 	}
-	// TODO: read off of query parameter
 
-	if err := srv.db.QuerySparqlWriter(ctx, w, site, bytes.NewBuffer(sparqlQuery)); err != nil {
+	log.Infof("Query SPARQL: %s %s", site, string(sparqlQuery))
+	if err := srv.db.QuerySparqlWriter(ctx, w, site, string(sparqlQuery)); err != nil {
 		rerr := fmt.Errorf("Bad SPARQL query: %w", err)
 		log.Error(rerr)
 		http.Error(w, rerr.Error(), http.StatusInternalServerError)

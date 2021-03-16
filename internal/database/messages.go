@@ -310,7 +310,7 @@ func (q *Query) FromURLParams(vals url.Values) error {
 
 	_sparql := vals.Get("sparql")
 	if len(_sparql) > 0 {
-		q.Sparql, err = url.QueryUnescape(_sparql)
+		q.Sparql, err = url.PathUnescape(_sparql)
 		if err != nil {
 			return fmt.Errorf("Invalid query '%s': %w", _sparql, err)
 		}
@@ -335,7 +335,8 @@ func (q *Query) FromURLParams(vals url.Values) error {
 			return fmt.Errorf("Invalid start time %s: %w", _start, err)
 		}
 	} else {
-		return errors.New("Query needs a start time in RFC3339")
+		//return errors.New("Query needs a start time in RFC3339")
+		q.Start = time.Time{}
 	}
 
 	if _end := vals.Get("end"); len(_end) > 0 {

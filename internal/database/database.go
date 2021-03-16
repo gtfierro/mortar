@@ -1,6 +1,7 @@
 package database
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -30,7 +31,7 @@ type Database interface {
 	RegisterStream(context.Context, Stream) error
 	InsertHistoricalData(ctx context.Context, ds Dataset) error
 	ReadDataChunk(context.Context, io.Writer, *Query) error
-	QuerySparqlWriter(context.Context, io.Writer, string, io.Reader) error
+	QuerySparqlWriter(context.Context, io.Writer, string, string) error
 	QuerySparql(context.Context, string, string) (*sparql.Results, error)
 	Qualify(context.Context, []string) (map[string][]int, error)
 	AddTriples(context.Context, TripleDataset) error
@@ -282,22 +283,27 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	// if a sparql query is provided, then execute it, join on 'streams' to get all of the ids
 	// implied by the query, and use those to determine the ids in the 'data' table
 	var err error
+
 	if len(q.Sparql) > 0 {
 		fmt.Println("SPARQL", q.Sparql)
 		// TODO: get all graphs
-		res, err := db.QuerySparql(ctx, "all", q.Sparql)
+		var uris []string
+		res, err := db.QuerySparql(ctx, "default", q.Sparql)
 		if err != nil {
 			return err
 		}
 
-		var uris []string
+		fmt.Println("results", len(res.Results.Bindings))
 		for _, row := range res.Results.Bindings {
 			for _, value := range row {
 				if value.Type == "uri" {
 					uris = append(uris, value.Value)
+				} else {
+					fmt.Println("uri type", value.Type)
 				}
 			}
 		}
+		fmt.Println("metadata uris", len(uris))
 		// get ids from the uris
 		var rows pgx.Rows
 		if len(q.Sources) > 0 {
@@ -334,6 +340,8 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 		}
 	}
 
+	fmt.Println("metadata ids", len(q.Ids))
+
 	metadataFields := []arrow.Field{
 		{Name: "brick_class", Type: arrow.BinaryTypes.String, Nullable: true},
 		{Name: "brick_uri", Type: arrow.BinaryTypes.String, Nullable: true},
@@ -356,6 +364,7 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var id int64
 		var brick_class string
@@ -390,6 +399,8 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 		return fmt.Errorf("Error processing metadata: %w", err)
 	}
 
+	fmt.Println("query ids", len(q.Ids))
+
 	// TODO: need to do a better job of streaming this data out
 
 	sch := arrow.NewSchema([]arrow.Field{
@@ -422,6 +433,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 										FROM unified WHERE time>=$1 and time <=$2 and stream_id = ANY($3)
 										ORDER BY stream_id, time`, q.Start.Format(time.RFC3339), q.End.Format(time.RFC3339), q.Ids)
 	}
+	defer rows.Close()
 
 	if err != nil {
 		return fmt.Errorf("Could not query %w", err)
@@ -460,12 +472,13 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *
 	return arrowWriter.Close()
 }
 
-func (db *TimescaleDatabase) QuerySparqlWriter(ctx context.Context, w io.Writer, graph string, query io.Reader) error {
+func (db *TimescaleDatabase) QuerySparqlWriter(ctx context.Context, w io.Writer, graph string, sparqlQuery string) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
 	defer cancel()
 	if len(graph) == 0 {
 		graph = "default"
 	}
+	query := bytes.NewBuffer([]byte(sparqlQuery))
 
 	queryURL := fmt.Sprintf("http://%s/query/%s", db.reasonerAddress, graph)
 	resp, err := http.Post(queryURL, "application/json", query)
@@ -560,6 +573,7 @@ func (db *TimescaleDatabase) Qualify(ctx context.Context, qualifyQueryList []str
 
 	for queryIdx, queryString := range qualifyQueryList {
 		for _, graph := range graphs {
+			log.Infof("Querying graph %s with query %s", graph, queryString)
 			res, err := db.QuerySparql(ctx, graph, queryString)
 			if err != nil {
 				log.Errorf("Could not evaluate query %s: %w", queryString, err)
