@@ -201,29 +201,26 @@ class Client:
     def data_sparql(
         self, sparql, source=None, start=None, end=None, agg=None, window=None
     ):
-        parts = []
+        params = {'sparql': sparql}
+        if agg is not None and window is not None:
+            params['agg'] = agg
+            params['window'] = window
         if start is not None:
             if isinstance(start, datetime):
-                parts.append(f"start={start.localize().strftime('%Y-%m-%dT%H:%M:%SZ')}")
+                params['start'] = start.localize().strftime('%Y-%m-%dT%H:%M:%SZ')
             else:
-                parts.append(f"start={start}")
+                params['start'] = start
         else:
-            parts.append("start=1970-01-01T00:00:00Z")
+            params['start'] = '1970-01-01T00:00:00Z'
 
         if source is not None:
-            parts.append(f"source={source}")
+            params['source'] = source
 
         metadata = self.sparql(sparql, sites=[source] if source is not None else None)
 
-        query_string = "&".join(parts)
-        if agg is not None and window is not None:
-            resp = requests.get(
-                f"{self._endpoint}/query?sparql={sparql}&{query_string}&agg={agg}&window={window}"
-            )
-        else:
-            resp = requests.get(
-                f"{self._endpoint}/query?sparql={sparql}&{query_string}"
-            )
+        resp = requests.get(
+            f"{self._endpoint}/query", params=params
+        )
 
         buf = io.BytesIO(resp.content)
         # read metadata first
