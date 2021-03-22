@@ -6,6 +6,7 @@ import functools
 import csv
 import os
 import urllib.parse
+
 # import sqlite3
 from datetime import datetime
 import requests
@@ -48,9 +49,10 @@ def parse_aggfunc(aggfunc):
 
 
 class Client:
-    def __init__(self, endpoint):
+    def __init__(self, endpoint, apikey=None):
         self._endpoint = endpoint.strip("/")
         self._sparql_endpoint = SPARQLStore(f"{self._endpoint}/sparql")
+        self._apikey = apikey
         # self._cache = sqlite3.connect(".mortar_cache.db")
         # cur = self._cache.cursor()
         # cur.execute('''CREATE TABLE IF NOT EXISTS downloaded(time TIMESTAMP, query STRING, data BLOB)''')
@@ -73,7 +75,10 @@ class Client:
                         registered = True
                     w.writerow([row["time"], row["value"]])
 
-                url = f"{self._endpoint}/insert/csv?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}"
+                if self._apikey:
+                    url = f"{self._endpoint}/insert/csv?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}&apikey={self._apikey}"
+                else:
+                    url = f"{self._endpoint}/insert/csv?source={source}&name={name}&brick_uri={uri}&units={units}&brick_class={btype}"
 
                 b = io.BytesIO(buf.getvalue().encode("utf8"))
                 resp = requests.post(url, data=b, headers={"Content-Type": "text/csv"})
@@ -94,7 +99,12 @@ class Client:
         if brick_class is not None:
             d["BrickClass"] = brick_class
         logging.info(f"Registering new stream {d} to {self._endpoint}/register_stream")
-        r = requests.post(f"{self._endpoint}/register_stream", json=d)
+        if self._apikey:
+            r = requests.post(
+                f"{self._endpoint}/register_stream?apikey={self._apikey}", json=d
+            )
+        else:
+            r = requests.post(f"{self._endpoint}/register_stream", json=d)
         if not r.ok:
             raise Exception(r.content)
         return Stream(self, d)
@@ -116,7 +126,12 @@ class Client:
             "Name": name,
             "Readings": readings,
         }
-        resp = requests.post(f"{self._endpoint}/insert/data", json=d)
+        if self._apikey:
+            resp = requests.post(
+                f"{self._endpoint}/insert/data?apikey={self._apikey}", json=d
+            )
+        else:
+            resp = requests.post(f"{self._endpoint}/insert/data", json=d)
         if not resp.ok:
             raise Exception(resp.content)
 
@@ -125,10 +140,17 @@ class Client:
         basename = os.path.basename(filename)
         _, fformat = os.path.splitext(basename)
         with open(filename, "rb") as f:
-            resp = requests.post(
-                f"{self._endpoint}/insert/metadata?source={source}&origin={basename}&format={fformat}",
-                data=f.read(),
-            )
+            if self._apikey:
+                resp = requests.post(
+                    f"{self._endpoint}/insert/metadata?source={source}&origin={basename}&format={fformat}&apikey={self._apikey}",
+                    data=f.read(),
+                )
+            else:
+                resp = requests.post(
+                    f"{self._endpoint}/insert/metadata?source={source}&origin={basename}&format={fformat}",
+                    data=f.read(),
+                )
+
             if not resp.ok:
                 raise Exception(resp.content)
 
@@ -205,34 +227,32 @@ class Client:
     def data_sparql(
         self, sparql, source=None, start=None, end=None, agg=None, window=None
     ):
-        params = {'sparql': sparql}
+        params = {"sparql": sparql}
         if agg is not None and window is not None:
-            params['agg'] = agg
-            params['window'] = window
+            params["agg"] = agg
+            params["window"] = window
         if start is not None:
             if isinstance(start, datetime):
-                params['start'] = start.localize().strftime('%Y-%m-%dT%H:%M:%SZ')
+                params["start"] = start.localize().strftime("%Y-%m-%dT%H:%M:%SZ")
             else:
-                params['start'] = start
+                params["start"] = start
         else:
-            params['start'] = '1970-01-01T00:00:00Z'
+            params["start"] = "1970-01-01T00:00:00Z"
 
         if end is not None:
             if isinstance(end, datetime):
-                params['end'] = end.localize().strftime('%Y-%m-%dT%H:%M:%SZ')
+                params["end"] = end.localize().strftime("%Y-%m-%dT%H:%M:%SZ")
             else:
-                params['end'] = end
+                params["end"] = end
         else:
-            params['end'] = '2100-01-01T00:00:00Z'
+            params["end"] = "2100-01-01T00:00:00Z"
 
         if source is not None:
-            params['source'] = source
+            params["source"] = source
 
         metadata = self.sparql(sparql, sites=[source] if source is not None else None)
 
-        resp = requests.get(
-            f"{self._endpoint}/query", params=params
-        )
+        resp = requests.get(f"{self._endpoint}/query", params=params)
 
         buf = io.BytesIO(resp.content)
         # read metadata first
