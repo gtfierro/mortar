@@ -256,8 +256,10 @@ class Client:
         if isinstance(required_queries, dict):
             names = list(required_queries.keys())
             required_queries = [required_queries[q] for q in names]
-        else:
+        elif isinstance(required_queries, list):
             names = None
+        else:
+            raise TypeError("Argument must be a list of queries")
         res = requests.post(f"{self._endpoint}/qualify", json=required_queries)
         return QualifyResult(res.json(), names=names)
 
