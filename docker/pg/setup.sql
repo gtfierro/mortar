@@ -106,6 +106,8 @@ AFTER INSERT OR UPDATE OR DELETE ON triples
 
 
 -- authorization stuff
+CREATE EXTENSION pgcrypto;
+
 CREATE TABLE apikeys(
     apikey TEXT PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
