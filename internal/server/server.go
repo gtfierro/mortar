@@ -74,13 +74,13 @@ func (srv *Server) Shutdown() error {
 func (srv *Server) ServeHTTP() error {
 	log := logging.FromContext(srv.ctx)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/register_stream", srv.requireAuth(srv.registerStream))
-	mux.HandleFunc("/insert/data", srv.requireAuth(srv.insertJSONData))
-	mux.HandleFunc("/insert/csv", srv.requireAuth(srv.insertCSVFile))
-	mux.HandleFunc("/insert/metadata", srv.requireAuth(srv.insertTriplesFromFile))
-	mux.HandleFunc("/query", srv.readDataChunk)
-	mux.HandleFunc("/sparql", srv.serveSPARQLQuery)
-	mux.HandleFunc("/qualify", srv.handleQualify)
+	mux.HandleFunc("/register_stream", requireAuth(addLogger(srv.registerStream)))
+	mux.HandleFunc("/insert/data", requireAuth(addLogger(srv.insertJSONData)))
+	mux.HandleFunc("/insert/csv", requireAuth(addLogger(srv.insertCSVFile)))
+	mux.HandleFunc("/insert/metadata", requireAuth(addLogger(srv.insertTriplesFromFile)))
+	mux.HandleFunc("/query", addLogger(srv.readDataChunk))
+	mux.HandleFunc("/sparql", addLogger(srv.serveSPARQLQuery))
+	mux.HandleFunc("/qualify", addLogger(srv.handleQualify))
 	// TODO: data stream statistics (per source, per type, etc)
 
 	server := &http.Server{
@@ -99,19 +99,6 @@ func (srv *Server) ServeHTTP() error {
 // Done kills the server
 func (srv *Server) Done() <-chan struct{} {
 	return srv.ctx.Done()
-}
-
-func (srv *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		apikey := r.URL.Query().Get("apikey")
-		if len(apikey) == 0 {
-			http.Error(w, "Non-existent or invalid apikey", http.StatusUnauthorized)
-			return
-		}
-		r = r.WithContext(context.WithValue(r.Context(), database.ContextKey("user"), apikey))
-		r = r.WithContext(logging.WithLogger(r.Context()))
-		next(w, r)
-	})
 }
 
 func (srv *Server) registerStream(w http.ResponseWriter, r *http.Request) {
