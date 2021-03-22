@@ -17,6 +17,8 @@ import (
 	"github.com/apache/arrow/go/arrow"
 )
 
+type ContextKey string
+
 // Stream holds metadata associated with a timeseries source
 type Stream struct {
 	SourceName string

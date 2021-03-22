@@ -28,7 +28,7 @@ ALTER TABLE  data
 -- Timescale 2.x
 SELECT add_compression_policy('data', INTERVAL '14 days');
 
-CREATE VIEW unified AS 
+CREATE VIEW unified AS
     SELECT time, value, stream_id, name, source, units, brick_uri, brick_class
     FROM data LEFT JOIN streams ON data.stream_id = streams.id;
 
@@ -72,7 +72,7 @@ CREATE VIEW latest_triples AS
         FROM triples
         GROUP BY source, origin
     )
-    SELECT triples.source, s, p, o 
+    SELECT triples.source, s, p, o
     FROM triples
     LEFT JOIN lts USING(source, origin, time);
 
@@ -103,3 +103,58 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER notify_triple_change
 AFTER INSERT OR UPDATE OR DELETE ON triples
   FOR EACH ROW EXECUTE PROCEDURE notify_event();
+
+
+-- authorization stuff
+CREATE TABLE apikeys(
+    apikey TEXT PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE authorizations(
+    apikey TEXT REFERENCES apikeys(apikey),
+    source TEXT NOT NULL,
+    permission TEXT NOT NULL,
+    granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION new_apikey() RETURNS TEXT AS $$
+  DECLARE
+    apikey UUID;
+  BEGIN
+    apikey = gen_random_uuid();
+    INSERT INTO apikeys(apikey) VALUES (apikey);
+  RETURN apikey;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION revoke_apikey(to_revoke TEXT) RETURNS VOID AS $$
+  BEGIN
+    DELETE FROM authorizations WHERE apikey = to_revoke;
+    DELETE FROM apikeys WHERE apikey = to_revoke;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION authorize_write(key TEXT, auth_source TEXT) RETURNS VOID AS $$
+  BEGIN
+    INSERT INTO authorizations(apikey, source, permission) VALUES (key, auth_source, 'write');
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION unauthorize_write(to_revoke TEXT) RETURNS VOID AS $$
+  BEGIN
+    DELETE FROM authorizations WHERE apikey = to_revoke AND permission = 'write';
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION authorize_read(key TEXT, auth_source TEXT) RETURNS VOID AS $$
+  BEGIN
+    INSERT INTO authorizations(apikey, source, permission) VALUES (key, auth_source, 'read');
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION unauthorize_read(to_revoke TEXT) RETURNS VOID AS $$
+  BEGIN
+    DELETE FROM authorizations WHERE apikey = to_revoke AND permission = 'read';
+  END;
+$$ LANGUAGE plpgsql;

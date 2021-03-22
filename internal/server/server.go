@@ -74,10 +74,10 @@ func (srv *Server) Shutdown() error {
 func (srv *Server) ServeHTTP() error {
 	log := logging.FromContext(srv.ctx)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/register_stream", srv.registerStream)
-	mux.HandleFunc("/insert/data", srv.insertJSONData)
-	mux.HandleFunc("/insert/csv", srv.insertCSVFile)
-	mux.HandleFunc("/insert/metadata", srv.insertTriplesFromFile)
+	mux.HandleFunc("/register_stream", srv.requireAuth(srv.registerStream))
+	mux.HandleFunc("/insert/data", srv.requireAuth(srv.insertJSONData))
+	mux.HandleFunc("/insert/csv", srv.requireAuth(srv.insertCSVFile))
+	mux.HandleFunc("/insert/metadata", srv.requireAuth(srv.insertTriplesFromFile))
 	mux.HandleFunc("/query", srv.readDataChunk)
 	mux.HandleFunc("/sparql", srv.serveSPARQLQuery)
 	mux.HandleFunc("/qualify", srv.handleQualify)
@@ -101,10 +101,23 @@ func (srv *Server) Done() <-chan struct{} {
 	return srv.ctx.Done()
 }
 
+func (srv *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apikey := r.URL.Query().Get("apikey")
+		if len(apikey) == 0 {
+			http.Error(w, "Non-existent or invalid apikey", http.StatusUnauthorized)
+			return
+		}
+		r = r.WithContext(context.WithValue(r.Context(), database.ContextKey("user"), apikey))
+		r = r.WithContext(logging.WithLogger(r.Context()))
+		next(w, r)
+	})
+}
+
 func (srv *Server) registerStream(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 
-	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
 	var stream database.Stream
@@ -124,7 +137,7 @@ func (srv *Server) registerStream(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) insertJSONData(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
 
-	ctx, cancel := context.WithTimeout(srv.ctx, config.DataWriteTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), config.DataWriteTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -159,7 +172,7 @@ func (srv *Server) insertJSONData(w http.ResponseWriter, r *http.Request) {
 
 func (srv *Server) insertCSVFile(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, config.DataWriteTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), config.DataWriteTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -182,9 +195,6 @@ func (srv *Server) insertCSVFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	//s, _ := ioutil.ReadAll(r.Body)
-	//log.Info(string(s))
 
 	// try out csv decoder
 	csvr := csv.NewReader(r.Body)
@@ -234,7 +244,7 @@ func (srv *Server) insertCSVFile(w http.ResponseWriter, r *http.Request) {
 // TODO: get metadat as well: units, SPARQL query results, etc
 func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, config.DataReadTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), config.DataReadTimeout)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -260,7 +270,7 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 
 func (srv *Server) insertTriplesFromFile(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -284,7 +294,7 @@ func (srv *Server) insertTriplesFromFile(w http.ResponseWriter, r *http.Request)
 
 func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 	log := logging.FromContext(srv.ctx)
-	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	defer r.Body.Close()
 
@@ -324,7 +334,7 @@ func (srv *Server) handleQualify(w http.ResponseWriter, r *http.Request) {
 	// TODO: JSON-encoded list of sparql queries
 	log := logging.FromContext(srv.ctx)
 
-	ctx, cancel := context.WithTimeout(srv.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	defer r.Body.Close()
 

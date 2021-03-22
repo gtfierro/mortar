@@ -136,6 +136,12 @@ func (db *TimescaleDatabase) RegisterStream(ctx context.Context, stream Stream) 
 		return fmt.Errorf("Cannot register invalid stream: %w", err)
 	}
 
+	if authorized, err := db.checkAuth(ctx, "write", stream.SourceName); err != nil {
+		return fmt.Errorf("Cannot determine authorized status: %w", err)
+	} else if !authorized {
+		return fmt.Errorf("Cannot write to source: %s", stream.SourceName)
+	}
+
 	var registered = false
 	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
 		var (
@@ -193,6 +199,12 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 
 	if err := checkDataset(ds); err != nil {
 		return fmt.Errorf("Cannot handle invalid dataset: %w", err)
+	}
+
+	if authorized, err := db.checkAuth(ctx, "write", ds.GetSource()); err != nil {
+		return fmt.Errorf("Cannot determine authorized status: %w", err)
+	} else if !authorized {
+		return fmt.Errorf("Cannot write to source: %s", ds.GetSource())
 	}
 
 	var num int64 = 0
@@ -513,6 +525,12 @@ func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) e
 		return fmt.Errorf("Cannot handle invalid dataset: %w", err)
 	}
 
+	if authorized, err := db.checkAuth(ctx, "write", ds.GetSource()); err != nil {
+		return fmt.Errorf("Cannot determine authorized status: %w", err)
+	} else if !authorized {
+		return fmt.Errorf("Cannot write to source: %s", ds.GetSource())
+	}
+
 	var num int64 = 0
 
 	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
@@ -590,4 +608,19 @@ func (db *TimescaleDatabase) Qualify(ctx context.Context, qualifyQueryList []str
 	}
 	log.Infof("Qualify result: %+v", querySiteCounts)
 	return querySiteCounts, nil
+}
+
+func (db *TimescaleDatabase) checkAuth(ctx context.Context, permission, source string) (bool, error) {
+	var numOk int
+	apikey := ctx.Value(ContextKey("user"))
+	if apikey == nil {
+		return false, fmt.Errorf("No apikey")
+	}
+
+	row := db.pool.QueryRow(ctx, "SELECT COUNT(*) FROM authorizations WHERE apikey = $1 AND permission = $2 and source = $3", apikey, permission, source)
+	err := row.Scan(&numOk)
+	if err != nil {
+		return false, err
+	}
+	return numOk > 0, nil
 }
