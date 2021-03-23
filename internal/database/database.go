@@ -13,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/knakk/sparql"
 
+	"github.com/golang/snappy"
+
 	"github.com/apache/arrow/go/arrow"
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/ipc"
@@ -403,9 +405,12 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	return mdWriter.Close()
 }
 
-func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
+func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, httpw io.Writer, q *Query) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
 	defer cancel()
+
+	w := snappy.NewBufferedWriter(httpw)
+	defer w.Close()
 
 	if err := db.writeMetadataArrow(ctx, w, q); err != nil {
 		return fmt.Errorf("Error processing metadata: %w", err)
