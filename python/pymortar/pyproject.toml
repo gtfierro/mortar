@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pymortar"
-version = "2.0.1a2"
+version = "2.0.1a4"
 description = ""
 authors = ["Gabe Fierro <gtfierro@cs.berkeley.edu>"]
 
@@ -12,6 +12,7 @@ pyarrow = "^2.0.0"
 pandas = "^1.1.5"
 googleapis-common-protos = "^1.52.0"
 brickschema = "0.3.0a4"
+python-snappy = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"

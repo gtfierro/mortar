@@ -7,7 +7,7 @@ import csv
 import os
 import urllib.parse
 
-import snappy
+# import snappy
 # import sqlite3
 from datetime import datetime
 import requests
@@ -255,8 +255,9 @@ class Client:
 
         resp = requests.get(f"{self._endpoint}/query", params=params)
 
-        dec = snappy.StreamDecompressor()
-        buf = io.BytesIO(dec.decompress(resp.content))
+        # dec = snappy.StreamDecompressor()
+        # buf = io.BytesIO(dec.decompress(resp.content))
+        buf = io.BytesIO(resp.content)
         # read metadata first
         r = pa.ipc.open_stream(buf)
         md = r.read_pandas()
