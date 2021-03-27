@@ -13,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/knakk/sparql"
 
+	"github.com/pierrec/lz4"
+	//"github.com/DataDog/zstd"
 	//"github.com/golang/snappy"
 
 	"github.com/apache/arrow/go/arrow"
@@ -312,8 +314,6 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 			for _, value := range row {
 				if value.Type == "uri" {
 					uris = append(uris, value.Value)
-				} else {
-					fmt.Println("uri type", value.Type)
 				}
 			}
 		}
@@ -405,12 +405,13 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	return mdWriter.Close()
 }
 
-func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, w io.Writer, q *Query) error {
+func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, httpw io.Writer, q *Query) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
 	defer cancel()
 
-	//w := snappy.NewBufferedWriter(httpw)
-	//defer w.Close()
+	//w := httpw
+	w := lz4.NewWriter(httpw)
+	defer w.Close()
 
 	if err := db.writeMetadataArrow(ctx, w, q); err != nil {
 		return fmt.Errorf("Error processing metadata: %w", err)
