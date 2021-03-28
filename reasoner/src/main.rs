@@ -11,7 +11,7 @@ use futures::{
 };
 use rdf::{node::Node, uri::Uri};
 use tokio_postgres::{NoTls, Error, AsyncMessage};
-use oxigraph::sparql::{QueryOptions, QueryResults, QueryResultsFormat};
+use oxigraph::sparql::{QueryResults, QueryResultsFormat, Query};
 use oxigraph::model::*;
 use oxigraph::SledStore;
 use reasonable::graphmanager::GraphManager;
@@ -59,8 +59,8 @@ fn parse_triple_term(t: &str) -> Option<Node> {
     Some(r)
 }
 
-fn graphname_node(t: &str) -> NamedOrBlankNode {
-    NamedOrBlankNode::NamedNode(NamedNode::new(format!("urn:{}", t)).unwrap())
+fn graphname_node(t: &str) -> GraphName {
+    GraphName::NamedNode(NamedNode::new(format!("urn:{}", t)).unwrap())
 }
 
 #[tokio::main]
@@ -92,7 +92,7 @@ async fn main() -> Result<(), Error> {
         tokio_postgres::connect(&connstr, NoTls).await?;
 
     let (tx, mut rx) = mpsc::unbounded();
-    let stream = stream::poll_fn(move |cx| connection.poll_message(cx)).map_err(|e| panic!(e));
+    let stream = stream::poll_fn(move |cx| connection.poll_message(cx)).map_err(|e| panic!("{}", e));
     let connection = stream.forward(tx).map(|r| r.unwrap());
 
     // The connection object performs the actual communication with the database,
@@ -164,14 +164,14 @@ async fn main() -> Result<(), Error> {
             .map(|graphname: String, query: String, store: SledStore| {
                 let sparql = format!("{}{}", qfmt, query);
                 //println!("query: {} {}", sparql, graphname);
-                let opts = match graphname.as_str() {
-                    "default" => QueryOptions::default().with_default_graph_as_union(),
-                    "all" => QueryOptions::default().with_default_graph_as_union(),
-                    gname => QueryOptions::default().with_default_graph(graphname_node(gname)) ,
+                let mut parsed_query = Query::parse(&sparql, None).unwrap();
+                match graphname.as_str() {
+                    "default" => parsed_query.dataset_mut().set_default_graph_as_union(),
+                    "all" => parsed_query.dataset_mut().set_default_graph_as_union(),
+                    gname => parsed_query.dataset_mut().set_default_graph(vec![graphname_node(gname)]) ,
                 };
                 println!("Querying graph {}", graphname_node(&graphname));
-                let q = store.clone().prepare_query(&sparql, opts).unwrap();
-                let res = q.exec().unwrap();
+                let res = store.clone().query(parsed_query).unwrap();
                 let mut resp: Vec<u8> = Vec::new();
                 if let QueryResults::Solutions(_) = res {
                     res.write(&mut resp, QueryResultsFormat::Json).unwrap();
@@ -194,14 +194,14 @@ async fn main() -> Result<(), Error> {
                 if let Some(query) = m.get("query") {
                     let sparql = format!("{}{}", qfmt, query);
                     //println!("query: {} {}", sparql, graphname);
-                    let opts = match graphname.as_str() {
-                        "default" => QueryOptions::default().with_default_graph_as_union(),
-                        "all" => QueryOptions::default().with_default_graph_as_union(),
-                        gname => QueryOptions::default().with_default_graph(graphname_node(gname)) ,
+                    let mut parsed_query = Query::parse(&sparql, None).unwrap();
+                    match graphname.as_str() {
+                        "default" => parsed_query.dataset_mut().set_default_graph_as_union(),
+                        "all" => parsed_query.dataset_mut().set_default_graph_as_union(),
+                        gname => parsed_query.dataset_mut().set_default_graph(vec![graphname_node(gname)]) ,
                     };
                     println!("Querying graph {}", graphname_node(&graphname));
-                    let q = store.clone().prepare_query(&sparql, opts).unwrap();
-                    let res = q.exec().unwrap();
+                    let res = store.clone().query(parsed_query).unwrap();
                     let mut resp: Vec<u8> = Vec::new();
                     if let QueryResults::Solutions(_) = res {
                         res.write(&mut resp, QueryResultsFormat::Json).unwrap();

@@ -5,11 +5,11 @@ authors = ["Gabe Fierro <gtfierro@cs.berkeley.edu>"]
 edition = "2018"
 
 [dependencies]
-reasonable = "0.1.37"
+reasonable = "0.1.38"
 # reasonable = { path = "../../../../reasonable/" }
 tokio = { version = "0.2", features = ["macros", "time"] }
 warp = "0.2"
-oxigraph = { version="0.1", features=["sled"] }
+oxigraph = { version="0.2.2", features=["sled"] }
 bytes = "0.5.6"
 tokio-postgres = "0.5"
 rdf = "0.1.4"
