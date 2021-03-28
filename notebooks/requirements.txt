@@ -1,2 +1,2 @@
-pymortar>=2.0.1a4
+pymortar>=2.0.2
 plotly
