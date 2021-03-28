@@ -254,10 +254,10 @@ class Client:
         metadata = self.sparql(sparql, sites=[source] if source is not None else None)
 
         resp = requests.get(f"{self._endpoint}/query", params=params)
+        # print(len(resp.content))
 
-        # dec = snappy.StreamDecompressor()
-        # buf = io.BytesIO(dec.decompress(resp.content))
-        buf = io.BytesIO(resp.content)
+        buf = pa.decompress(resp.content, decompressed_size=4e10, codec='lz4', asbytes=True)
+        buf = io.BytesIO(buf)
         # read metadata first
         r = pa.ipc.open_stream(buf)
         md = r.read_pandas()
@@ -265,6 +265,7 @@ class Client:
         r = pa.ipc.open_stream(buf)
         df = r.read_pandas()
         return Dataset(metadata, md, df)
+
 
     def qualify(self, required_queries):
         """
