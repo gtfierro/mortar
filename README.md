@@ -26,5 +26,3 @@ Beta documentation here: https://beta.mortardata.org/intro.html
 
 - install [`kompose`](https://github.com/kubernetes/kompose)
 - run `kompose convert -f docker-compose.yml -o k8s`
-
-
