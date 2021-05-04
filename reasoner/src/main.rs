@@ -1,6 +1,7 @@
 use warp::Filter;
 use std::env;
 use std::str;
+use log::debug;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use tokio::time;
@@ -9,12 +10,14 @@ use futures::future::join_all;
 use futures::{
     stream, FutureExt, StreamExt, TryStreamExt,
 };
-use rdf::{node::Node, uri::Uri};
+use oxigraph::model::{Term, NamedNode, BlankNode, Literal, Triple};
 use tokio_postgres::{NoTls, Error, AsyncMessage};
 use oxigraph::sparql::{QueryResults, QueryResultsFormat, Query};
 use oxigraph::model::*;
 use oxigraph::SledStore;
 use reasonable::graphmanager::GraphManager;
+use reasonable::common::make_triple;
+use reasonable::error::ReasonableError;
 use bb8::Pool;
 use bb8_postgres::PostgresConnectionManager;
 
@@ -49,14 +52,19 @@ struct TripleEvent {
 struct NotUtf8;
 impl warp::reject::Reject for NotUtf8 {}
 
-fn parse_triple_term(t: &str) -> Option<Node> {
+fn parse_triple_term(t: &str) -> Result<Term, ReasonableError> {
     let r = match t.as_bytes()[0] as char {
-        '<' => Node::UriNode { uri: Uri::new(t.replace(&['<','>'][..], "")) },
-        '_' => Node::BlankNode { id: t.to_string() },
-        '"' => Node::LiteralNode { literal: t.to_string(), data_type: None, language: None },
-        _ => return None
+        '<' => {
+            match NamedNode::new(t.replace(&['<','>'][..], "")) {
+                Ok(n) => Term::NamedNode(n),
+                Err(_) => Term::Literal(Literal::new_simple_literal(t.to_string())),
+            }
+        },
+        '_' => Term::BlankNode(BlankNode::new(t.to_string())?),
+        '"' => Term::Literal(Literal::new_simple_literal(t.to_string())),
+        _ => return Err(ReasonableError::ManagerError("Could not parse term".to_string()))
     };
-    Some(r)
+    Ok(r)
 }
 
 fn graphname_node(t: &str) -> GraphName {
@@ -65,6 +73,7 @@ fn graphname_node(t: &str) -> GraphName {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    env_logger::init();
     let mut mgr = GraphManager::new();
     // mgr.load_file("/home/gabe/src/Brick/Brick/Brick.ttl").unwrap();
     // mgr.load_file("/home/gabe/src/Brick/Brick/examples/soda_brick.ttl").unwrap();
@@ -117,9 +126,12 @@ async fn main() -> Result<(), Error> {
             let sourcename = src.clone();
             let conn = newp.get().await.unwrap();
             let rows = conn.query("SELECT s, p, o FROM latest_triples WHERE source = $1", &[&src]).await.unwrap();
-            let triples: Vec<(Node, Node, Node)> = rows.iter().map(|row| {
+            let triples: Vec<Triple> = rows.iter().map(|row| {
                 let (s, p, o): (&str, &str, &str) = (row.get(0), row.get(1), row.get(2));
-                (parse_triple_term(s).unwrap(), parse_triple_term(p).unwrap(), parse_triple_term(o).unwrap())
+                debug!("{} {} {}", s, p, o);
+                make_triple(parse_triple_term(s).unwrap(),
+                             parse_triple_term(p).unwrap(),
+                             parse_triple_term(o).unwrap()).unwrap()
             }).collect();
             (sourcename, triples)
         }
@@ -230,7 +242,7 @@ async fn main() -> Result<(), Error> {
     );
 
     //let mut trips: Vec<(Node, Node, Node)> = Vec::new();
-    let mut trips: HashMap<String, Vec<(Node, Node, Node)>> = HashMap::new();
+    let mut trips: HashMap<String, Vec<Triple>> = HashMap::new();
     let mut interval = time::interval(time::Duration::from_secs(10));
     loop {
         tokio::select! {
@@ -239,10 +251,11 @@ async fn main() -> Result<(), Error> {
                     if let AsyncMessage::Notification(n) = x {
                         let msg: TripleEvent = serde_json::from_str(n.payload()).unwrap();
                         let source = msg.data.source.to_owned();
+                        let triple = make_triple(parse_triple_term(&msg.data.s).unwrap(),
+                                                 parse_triple_term(&msg.data.p).unwrap(),
+                                                 parse_triple_term(&msg.data.o).unwrap()).unwrap();
                         trips.entry(source).or_insert(Vec::new())
-                             .push((parse_triple_term(&msg.data.s).unwrap(),
-                                    parse_triple_term(&msg.data.p).unwrap(),
-                                    parse_triple_term(&msg.data.o).unwrap()));
+                             .push(triple);
                     }
                 }
             },

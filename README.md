@@ -19,7 +19,7 @@ Beta documentation here: https://beta.mortardata.org/intro.html
 - [ ] Jupyter notebooks preloaded, 1 for each major piece of functionality:
     - [X] loading turtle files
     - [X] loading data files
-    - [ ] simple API example (data analysis)
+    - [X] simple API example (data analysis)
     - [ ] classic Mortar API example
 
 ## Docker Compose to K8s

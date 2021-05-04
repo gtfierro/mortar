@@ -55,7 +55,6 @@ func checkStream(s *Stream) error {
 	return nil
 }
 
-// TODO: check if stream is registered
 func checkDataset(d Dataset) error {
 	if d == nil {
 		return errors.New("Dataset is null")

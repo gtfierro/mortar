@@ -140,6 +140,7 @@ func (db *TimescaleDatabase) RegisterStream(ctx context.Context, stream Stream) 
 		return fmt.Errorf("Cannot register invalid stream: %w", err)
 	}
 
+	log.Infof("Register stream %+v", stream)
 	if authorized, err := db.checkAuth(ctx, "write", stream.SourceName); err != nil {
 		return fmt.Errorf("Cannot determine authorized status: %w", err)
 	} else if !authorized {
@@ -205,6 +206,7 @@ func (db *TimescaleDatabase) InsertHistoricalData(ctx context.Context, ds Datase
 		return fmt.Errorf("Cannot handle invalid dataset: %w", err)
 	}
 
+	// if the source does not exist, the checkAuth function will fail
 	if authorized, err := db.checkAuth(ctx, "write", ds.GetSource()); err != nil {
 		return fmt.Errorf("Cannot determine authorized status: %w", err)
 	} else if !authorized {
