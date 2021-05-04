@@ -5,8 +5,8 @@ services:
     build:
       context: ./docker/pg
       args:
-        - MORTAR_DB_USER=mortarchangeme
-        - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+        - mortarchangeme
+        - mortarpasswordchangeme
     image: "mortar/pg"
     restart: always
     ports:
@@ -67,8 +67,8 @@ services:
       - MORTAR_DB_HOST=pg
       - MORTAR_DB_PORT=5432
       - MORTAR_DB_DATABASE=mortar
-      - MORTAR_DB_USER=mortarchangeme
-      - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+      - mortarchangeme
+      - mortarpasswordchangeme
     ports:
       - "3030:3030"
     depends_on:

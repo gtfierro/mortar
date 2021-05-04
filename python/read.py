@@ -8,7 +8,7 @@ import pyarrow as pa
 
 s = "SELECT ?x WHERE { ?x rdf:type brick:Temperature_Sensor }"
 # resp = requests.get(f'http://localhost:5001/query?source=ciee&sparql={s}&start=2019-01-01T00:00:00Z')
-resp = requests.get(f'http://localhost:5001/query?sparql={s}&start=2019-01-01T00:00:00Z')
+resp = requests.get(f'https://beta-api.mortardata.org/query?sparql={s}&start=2019-01-01T00:00:00Z')
 r = pa.ipc.open_stream(resp.content)
 df = r.read_pandas()
 print(len(df))

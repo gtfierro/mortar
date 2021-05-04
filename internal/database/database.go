@@ -409,7 +409,7 @@ func (db *TimescaleDatabase) ReadDataChunk(ctx context.Context, httpw io.Writer,
 	ctx, cancel := context.WithTimeout(ctx, config.DataReadTimeout)
 	defer cancel()
 
-	//w := httpw
+	//w := httpw if not using compression
 	w := lz4.NewWriter(httpw)
 	defer w.Close()
 

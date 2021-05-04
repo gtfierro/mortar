@@ -8,6 +8,7 @@ import os
 import urllib.parse
 
 # import snappy
+import zstd
 # import sqlite3
 from datetime import datetime
 import requests
@@ -34,6 +35,8 @@ from pymortar.mortar_pb2 import AGG_FUNC_SUM as SUM
 logging.basicConfig(level=logging.INFO)
 
 # TODO: allow prefixes to be defined so that the big long URIs don't show up
+
+# _mempool = pa.default_memory_pool()
 
 
 def parse_aggfunc(aggfunc):
@@ -258,14 +261,15 @@ class Client:
 
         buf = pa.decompress(resp.content, decompressed_size=4e10, codec='lz4', asbytes=True)
         buf = io.BytesIO(buf)
+        # # before: no compression
+        # buf = io.BytesIO(resp.content)
         # read metadata first
-        r = pa.ipc.open_stream(buf)
-        md = r.read_pandas()
+        rdr = pa.ipc.open_stream(buf)
+        md = rdr.read_pandas()
         # then read data
-        r = pa.ipc.open_stream(buf)
-        df = r.read_pandas()
+        rdr = pa.ipc.open_stream(buf)
+        df = rdr.read_pandas()
         return Dataset(metadata, md, df)
-
 
     def qualify(self, required_queries):
         """
