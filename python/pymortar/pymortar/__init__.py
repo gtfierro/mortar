@@ -8,7 +8,6 @@ import os
 import urllib.parse
 
 # import snappy
-import zstd
 # import sqlite3
 from datetime import datetime
 import requests
@@ -219,12 +218,26 @@ class Client:
         else:
             resp = requests.get(f"{self._endpoint}/query?{query_string}")
 
-        buf = io.BytesIO(resp.content)
+        if not resp.ok:
+            logging.error("Error getting data %s" % resp.content)
+            raise Exception(resp.content)
+
+        buf = pa.decompress(resp.content, decompressed_size=4e10, codec='lz4', asbytes=True)
+        buf = io.BytesIO(buf)
         # read metadata first
-        r = pa.ipc.open_stream(buf)
+        try:
+            r = pa.ipc.open_stream(buf)
+        except pa.ArrowInvalid as e:
+            logging.error("Error deserializing metadata %s" % e)
+            raise Exception(e)
         md = r.read_pandas()
+
         # then read data
-        r = pa.ipc.open_stream(buf)
+        try:
+            r = pa.ipc.open_stream(buf)
+        except pa.ArrowInvalid as e:
+            logging.error("Error deserializing data %s" % e)
+            raise Exception(e)
         df = r.read_pandas()
         return Dataset(None, md, df)
 
@@ -257,6 +270,9 @@ class Client:
         metadata = self.sparql(sparql, sites=[source] if source is not None else None)
 
         resp = requests.get(f"{self._endpoint}/query", params=params)
+        if not resp.ok:
+            logging.error("Error getting data %s" % resp.content)
+            raise Exception(resp.content)
         # print(len(resp.content))
 
         buf = pa.decompress(resp.content, decompressed_size=4e10, codec='lz4', asbytes=True)
@@ -264,10 +280,19 @@ class Client:
         # # before: no compression
         # buf = io.BytesIO(resp.content)
         # read metadata first
-        rdr = pa.ipc.open_stream(buf)
+        try:
+            rdr = pa.ipc.open_stream(buf)
+        except pa.ArrowInvalid as e:
+            logging.error("Error deserializing metadata %s" % e)
+            raise Exception(e)
         md = rdr.read_pandas()
+
         # then read data
-        rdr = pa.ipc.open_stream(buf)
+        try:
+            rdr = pa.ipc.open_stream(buf)
+        except pa.ArrowInvalid as e:
+            logging.error("Error deserializing data %s" % e)
+            raise Exception(e)
         df = rdr.read_pandas()
         return Dataset(metadata, md, df)
 
@@ -289,6 +314,9 @@ class Client:
         else:
             raise TypeError("Argument must be a list of queries")
         res = requests.post(f"{self._endpoint}/qualify", json=required_queries)
+        if not res.ok:
+            logging.error("Error getting metadata %s" % res.content)
+            raise Exception(res.content)
         return QualifyResult(res.json(), names=names)
 
     def fetch(self, query):
