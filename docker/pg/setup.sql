@@ -74,7 +74,7 @@ CREATE VIEW latest_triples AS
     )
     SELECT triples.source, s, p, o
     FROM triples
-    LEFT JOIN lts USING(source, origin, time);
+    RIGHT JOIN lts USING(source, origin, time);
 
 
 -- for notification when triples changes
