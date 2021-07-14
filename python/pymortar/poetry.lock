@@ -583,18 +583,10 @@ python-versions = ">=3.6"
 docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
-[[package]]
-name = "zstd"
-version = "1.5.0.2"
-description = "ZSTD Bindings for Python"
-category = "main"
-optional = false
-python-versions = "*"
-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "771c96e4a50568dc597c573c70ed544e041284b30f5ab70a587a548b05c51c2d"
+content-hash = "29296554f47279dd3c9bad29de933889cc9565e14a3cba6ff85b9d903abd4448"
 
 [metadata.files]
 atomicwrites = [
@@ -1074,7 +1066,4 @@ xlrd = [
 zipp = [
     {file = "zipp-3.5.0-py3-none-any.whl", hash = "sha256:957cfda87797e389580cb8b9e3870841ca991e2125350677b2ca83a0e99390a3"},
     {file = "zipp-3.5.0.tar.gz", hash = "sha256:f5812b1e007e48cff63449a5e9f4e7ebea716b4111f9c4f9a645f91d579bf0c4"},
-]
-zstd = [
-    {file = "zstd-1.5.0.2.tar.gz", hash = "sha256:8d3388a15135c481b28ca67d079cb5fd79a9691626fd9979e6b4ec00eabb9e79"},
 ]

@@ -2,7 +2,7 @@ FROM jupyter/scipy-notebook
 
 USER root
 COPY notebooks/requirements.txt .
-RUN python -m pip install -r requirements.txt
+RUN python -m pip install --ignore-installed -r requirements.txt
 
 
 WORKDIR work
