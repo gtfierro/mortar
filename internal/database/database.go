@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/knakk/rdf"
 	"github.com/knakk/sparql"
 
 	"github.com/pierrec/lz4"
@@ -37,6 +38,7 @@ type Database interface {
 	ReadDataChunk(context.Context, io.Writer, *Query) error
 	QuerySparqlWriter(context.Context, io.Writer, string, string) error
 	QuerySparql(context.Context, string, string) (*sparql.Results, error)
+	GetGraph(context.Context, *ModelRequest, io.Writer) error
 	Qualify(context.Context, []string) (map[string][]int, error)
 	AddTriples(context.Context, TripleDataset) error
 }
@@ -629,4 +631,60 @@ func (db *TimescaleDatabase) checkAuth(ctx context.Context, permission, source s
 		return false, err
 	}
 	return numOk > 0, nil
+}
+
+// writes NTriples serialization to  the writer
+func (db *TimescaleDatabase) GetGraph(ctx context.Context, req *ModelRequest, w io.Writer) error {
+	log := logging.FromContext(ctx)
+	rows, err := db.pool.Query(ctx, `WITH latest AS (SELECT source, origin, MAX(time) as time
+													 FROM triples WHERE time <= $1 and source = $2
+													 GROUP BY source, origin)
+									 SELECT s, p, o FROM triples
+									 RIGHT JOIN latest USING(source, origin, time) order by s, p, o;`, req.Timestamp, req.Graph)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	enc := rdf.NewTripleEncoder(w, rdf.Turtle)
+	log.Infof("Get graph %+v", req)
+
+	triplesBuffer := bytes.NewBuffer(nil)
+	dec := rdf.NewTripleDecoder(triplesBuffer, rdf.NTriples)
+
+	a := 0
+	for rows.Next() {
+		var s, p, o string
+		if err := rows.Scan(&s, &p, &o); err != nil {
+			err = fmt.Errorf("Could not scan row: %s", err)
+			log.Error(err)
+			return err
+		}
+		fmt.Println(s, p, o)
+
+		if a == 28269 {
+			fmt.Println(s, p, o)
+		}
+		if _, err := fmt.Fprintf(triplesBuffer, "%s %s %s .\n", s, p, o); err != nil {
+			err = fmt.Errorf("Could not write row into decoder: %s", err)
+			log.Error(err)
+			return err
+		}
+		a += 1
+	}
+
+	i := 0
+	for triple, err := dec.Decode(); err != io.EOF; triple, err = dec.Decode() {
+		if err != nil {
+			err = fmt.Errorf("Could not decode triple from database (%d): %s", i, err)
+			log.Error(err)
+			return err
+		} else if err := enc.Encode(triple); err != nil {
+			err = fmt.Errorf("Could not encode triple %s from database: %s", triple, err)
+			log.Error(err)
+			return err
+		}
+		i += 1
+	}
+
+	return enc.Close()
 }

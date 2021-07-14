@@ -17,6 +17,11 @@ import (
 	"github.com/apache/arrow/go/arrow"
 )
 
+type ModelRequest struct {
+	Graph     string
+	Timestamp time.Time
+}
+
 type ContextKey string
 
 // Stream holds metadata associated with a timeseries source

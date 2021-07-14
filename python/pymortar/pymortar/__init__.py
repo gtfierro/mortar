@@ -13,6 +13,7 @@ from datetime import datetime
 import requests
 from requests.utils import quote
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
+import rdflib
 import pyarrow as pa
 import pandas as pd
 from brickschema.namespaces import BRICK, RDF, TAG
@@ -318,6 +319,19 @@ class Client:
             logging.error("Error getting metadata %s" % res.content)
             raise Exception(res.content)
         return QualifyResult(res.json(), names=names)
+
+    def get_graph(self, name, timestamp=None):
+        now = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        req = {
+            "graph": name,
+            "timestamp": timestamp if timestamp is not None else now,
+        }
+        res = requests.post(f"{self._endpoint}/query/model?apikey={self._apikey}", json=req)
+        # TODO: fix up the parsing so that it can return a graph
+        return res.content
+        g = rdflib.Graph()
+        g.parse(source=io.BytesIO(res.content), format="ttl")
+        return g
 
     def fetch(self, query):
         """

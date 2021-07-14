@@ -29,7 +29,6 @@ services:
       - MORTAR_DB_DATABASE=mortar
       - MORTAR_DB_USER=mortarchangeme
       - MORTAR_DB_PASSWORD=mortarpasswordchangeme
-      - MORTAR_REASONER_ADDRESS=reasoner:3030
       - MORTAR_REASONER_ADDRESS=mortar_reasoner_1:3030
     ports:
       - "5001:5001"
