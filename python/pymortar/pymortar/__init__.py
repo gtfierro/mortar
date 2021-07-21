@@ -392,7 +392,7 @@ class QualifyResult:
             columns = names
         self._df = pd.DataFrame(
             self.resp.values(), columns=columns, index=self.resp.keys()
-        ).__repr__()
+        )
 
     @property
     def sites(self):
@@ -405,7 +405,7 @@ class QualifyResult:
     def __repr__(self):
         if len(self.resp) == 0:
             return "<No qualify results>"
-        return str(self._df)
+        return str(self._df.__repr__())
 
 
 class Dataset:
