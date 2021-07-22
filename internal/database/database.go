@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -595,22 +596,63 @@ func (db *TimescaleDatabase) Qualify(ctx context.Context, qualifyQueryList []str
 		return querySiteCounts, err
 	}
 
-	for queryIdx, queryString := range qualifyQueryList {
+	numJobs := len(qualifyQueryList) * len(graphs)
+	tasks := make(chan queryTask, numJobs)
+	results := make(chan queryResult, numJobs)
+	errors := make(chan error, numJobs)
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	numWorkers := 4
+	wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		wctx, _ := context.WithTimeout(ctx, config.DataReadTimeout)
+		wid := i
+		go func() {
+			for task := range tasks {
+				queryString := qualifyQueryList[task.queryIdx]
+				log.Infof("Querying graph %s with query %s", task.graph, queryString)
+				res, err := db.QuerySparql(wctx, task.graph, queryString)
+				if err != nil {
+					log.Errorf("Could not evaluate query %s: %w", queryString, err)
+					errors <- err
+					break
+				}
+				results <- queryResult{
+					queryTask:    task,
+					numSolutions: len(res.Solutions()),
+				}
+				log.Infof("Worker %d: Graph %s, Query %d, # results %d", wid, task.graph, task.queryIdx, len(res.Solutions()))
+			}
+			wg.Done()
+		}()
+	}
+
+	for queryIdx := range qualifyQueryList {
 		for _, graph := range graphs {
-			log.Infof("Querying graph %s with query %s", graph, queryString)
-			res, err := db.QuerySparql(ctx, graph, queryString)
-			if err != nil {
-				log.Errorf("Could not evaluate query %s: %w", queryString, err)
-				return querySiteCounts, err
+			tasks <- queryTask{
+				graph:    graph,
+				queryIdx: queryIdx,
 			}
-			log.Infof("Graph %s, Query %d, # results %d", graph, queryIdx, len(res.Solutions()))
-
-			if _, ok := querySiteCounts[graph]; !ok {
-				querySiteCounts[graph] = make([]int, len(qualifyQueryList))
-			}
-			querySiteCounts[graph][queryIdx] = len(res.Solutions())
-
 		}
+	}
+	close(tasks)
+
+	go func() {
+		wg.Wait()
+		close(results)
+		done <- struct{}{}
+	}()
+
+	for res := range results {
+		if _, ok := querySiteCounts[res.graph]; !ok {
+			querySiteCounts[res.graph] = make([]int, len(qualifyQueryList))
+		}
+		querySiteCounts[res.graph][res.queryIdx] = res.numSolutions
+	}
+	select {
+	case err := <-errors:
+		return querySiteCounts, err
+	case <-done:
 	}
 	log.Infof("Qualify result: %+v", querySiteCounts)
 	return querySiteCounts, nil
@@ -629,4 +671,14 @@ func (db *TimescaleDatabase) checkAuth(ctx context.Context, permission, source s
 		return false, err
 	}
 	return numOk > 0, nil
+}
+
+type queryTask struct {
+	graph    string
+	queryIdx int
+}
+
+type queryResult struct {
+	queryTask
+	numSolutions int
 }
