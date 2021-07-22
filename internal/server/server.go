@@ -79,6 +79,7 @@ func (srv *Server) ServeHTTP() error {
 	mux.HandleFunc("/insert/csv", requireAuth(addLogger(srv.insertCSVFile)))
 	mux.HandleFunc("/insert/metadata", requireAuth(addLogger(srv.insertTriplesFromFile)))
 	mux.HandleFunc("/query", addLogger(srv.readDataChunk))
+	mux.HandleFunc("/query/model", requireAuth(addLogger(srv.readModel)))
 	mux.HandleFunc("/sparql", addLogger(srv.serveSPARQLQuery))
 	mux.HandleFunc("/qualify", addLogger(srv.handleQualify))
 	// TODO: data stream statistics (per source, per type, etc)
@@ -342,6 +343,29 @@ func (srv *Server) handleQualify(w http.ResponseWriter, r *http.Request) {
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(results); err != nil {
 		rerr := fmt.Errorf("Could not serialize qualify results: %w", err)
+		log.Error(rerr)
+		http.Error(w, rerr.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (srv *Server) readModel(w http.ResponseWriter, r *http.Request) {
+	log := logging.FromContext(srv.ctx)
+
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	defer r.Body.Close()
+
+	var request database.ModelRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		log.Errorf("Could not read model request %s", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// w.Header().Add("Content-Type", "text/turtle")
+	if err := srv.db.GetGraph(ctx, &request, w); err != nil {
+		rerr := fmt.Errorf("Could not write graph: %w", err)
 		log.Error(rerr)
 		http.Error(w, rerr.Error(), http.StatusInternalServerError)
 		return
