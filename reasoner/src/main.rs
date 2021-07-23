@@ -235,10 +235,10 @@ async fn main() -> Result<(), Error> {
             });
 
     // TODO: accept postgres stuff as env variables
-    println!("Serving on 0.0.0.0:3030");
+    println!("Serving on 0.0.0.0:3031");
     tokio::spawn(
         warp::serve(query2.or(query))
-            .run(([0, 0, 0, 0], 3030))
+            .run(([0, 0, 0, 0], 3031))
     );
 
     //let mut trips: Vec<(Node, Node, Node)> = Vec::new();

@@ -10,7 +10,7 @@ services:
     image: "mortar/pg"
     restart: always
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - "./pg-data/:/data/"
   mortar-server:
@@ -29,15 +29,15 @@ services:
       - MORTAR_DB_DATABASE=mortar
       - MORTAR_DB_USER=mortarchangeme
       - MORTAR_DB_PASSWORD=mortarpasswordchangeme
-      - MORTAR_REASONER_ADDRESS=mortar_reasoner_1:3030
+      - MORTAR_REASONER_ADDRESS=nginx:3030
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
         # - "2112:2112"
   prometheus:
     image: prom/prometheus:latest
     restart: always
     ports:
-      - 9090:9090
+      - "127.0.0.1:9090:9090"
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     volumes:
@@ -48,7 +48,7 @@ services:
     image: google/cadvisor:latest
     restart: always
     ports:
-      - 8080:8080
+      - "127.0.0.1:8080:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
@@ -69,7 +69,7 @@ services:
       - MORTAR_DB_USER=mortarchangeme
       - MORTAR_DB_PASSWORD=mortarpasswordchangeme
     ports:
-      - "3030:3030"
+      - "3031"
     depends_on:
       - pg
       - mortar-server
@@ -80,5 +80,14 @@ services:
         # image: jupyter/scipy-notebook
     restart: always
     ports:
-      - 8888:8888
+      - "127.0.0.1:8888:8888"
     command: "start-notebook.sh --NotebookApp.token=test-secret --NotebookApp.allow_origin='*'"
+
+  nginx:
+    image: nginx:latest
+    volumes:
+    - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+    - reasoner
+    ports:
+    - "3030:3030"
