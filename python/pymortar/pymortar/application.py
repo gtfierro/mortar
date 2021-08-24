@@ -9,6 +9,6 @@ class Application:
 
     @property
     def valid_sites(self):
-        df = self.client.qualify(self.queries)
+        df = self.client.qualify(self.queries).df
         sites = list(df[df.all(axis=1)].index)
         return sites
