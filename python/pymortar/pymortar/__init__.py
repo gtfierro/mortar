@@ -31,6 +31,7 @@ from pymortar.mortar_pb2 import AGG_FUNC_MIN as MIN
 from pymortar.mortar_pb2 import AGG_FUNC_MAX as MAX
 from pymortar.mortar_pb2 import AGG_FUNC_COUNT as COUNT
 from pymortar.mortar_pb2 import AGG_FUNC_SUM as SUM
+from pymortar.application import Application
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,6 +61,12 @@ class Client:
         # self._cache = sqlite3.connect(".mortar_cache.db")
         # cur = self._cache.cursor()
         # cur.execute('''CREATE TABLE IF NOT EXISTS downloaded(time TIMESTAMP, query STRING, data BLOB)''')
+
+    def _load_app(self, filename):
+        app = Application(filename, self)
+        sites = app.valid_sites
+        print(f"Application {app.name} runs on {len(sites)}: {sites}")
+
 
     def load_csv(self, filename):
         logging.info(f"Uploading {filename} to {self._endpoint}/insert_streaming")

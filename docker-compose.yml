@@ -1,34 +1,32 @@
 version: '3'
 
 services:
-  pg:
-    build:
-      context: ./docker/pg
-      args:
-        - MORTAR_DB_USER=mortarchangeme
-        - MORTAR_DB_PASSWORD=mortarpasswordchangeme
-    image: "mortar/pg"
-    restart: always
-    ports:
-      - "127.0.0.1:5434:5432"
-    volumes:
-      - "./pg-data/:/data/"
+  #pg:
+  #  build:
+  #    context: ./docker/pg
+  #    args:
+  #      - MORTAR_DB_USER=mortarchangeme
+  #      - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+  #  image: "mortar/pg"
+  #  restart: always
+  #  ports:
+  #    - "127.0.0.1:5434:5432"
+  #  volumes:
+  #    - "./pg-data/:/data/"
   mortar-server:
     build:
       context: .
       dockerfile: "./docker/mortar-server/Dockerfile"
     image: "mortar/server2"
     restart: always
-    depends_on:
-      - "pg"
     environment:
       - MORTAR_HTTP_ADDRESS=0.0.0.0
       - MORTAR_HTTP_PORT=5001
-      - MORTAR_DB_HOST=pg
-      - MORTAR_DB_PORT=5432
-      - MORTAR_DB_DATABASE=mortar
-      - MORTAR_DB_USER=mortarchangeme
-      - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+      - MORTAR_DB_HOST=d75nh18ux1.g8dk8eknf4.tsdb.forge.timescale.com
+      - MORTAR_DB_PORT=32735
+      - MORTAR_DB_DATABASE=tsdb
+      - MORTAR_DB_USER=tsdbadmin
+      - MORTAR_DB_PASSWORD=dv3cufbfmhs2c6gl
       - MORTAR_REASONER_ADDRESS=nginx:3030
     ports:
       - "127.0.0.1:5001:5001"
@@ -54,8 +52,6 @@ services:
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-    depends_on:
-      - pg
   reasoner:
     build:
       context: .
@@ -63,15 +59,14 @@ services:
     image: "mortar/reasoner"
     restart: always
     environment:
-      - MORTAR_DB_HOST=pg
-      - MORTAR_DB_PORT=5432
-      - MORTAR_DB_DATABASE=mortar
-      - MORTAR_DB_USER=mortarchangeme
-      - MORTAR_DB_PASSWORD=mortarpasswordchangeme
+      - MORTAR_DB_HOST=d75nh18ux1.g8dk8eknf4.tsdb.forge.timescale.com
+      - MORTAR_DB_PORT=32735
+      - MORTAR_DB_DATABASE=tsdb
+      - MORTAR_DB_USER=tsdbadmin
+      - MORTAR_DB_PASSWORD=dv3cufbfmhs2c6gl
     ports:
       - "3031"
     depends_on:
-      - pg
       - mortar-server
   jupyter-notebook:
     build:
