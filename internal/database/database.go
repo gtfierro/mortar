@@ -367,6 +367,7 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 		{Name: "units", Type: arrow.BinaryTypes.String, Nullable: true},
 		{Name: "name", Type: arrow.BinaryTypes.String, Nullable: true},
 		{Name: "stream_id", Type: arrow.PrimitiveTypes.Int64, Nullable: false},
+		{Name: "source", Type: arrow.BinaryTypes.String, Nullable: false},
 	}
 	mdsch := arrow.NewSchema(metadataFields, nil)
 	mdbldr := array.NewRecordBuilder(memory.DefaultAllocator, mdsch)
@@ -377,9 +378,10 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	units := mdbldr.Field(2).(*array.StringBuilder)
 	names := mdbldr.Field(3).(*array.StringBuilder)
 	ids := mdbldr.Field(4).(*array.Int64Builder)
+	sources := mdbldr.Field(5).(*array.StringBuilder)
 	mdWriter := ipc.NewWriter(w, ipc.WithSchema(mdbldr.Schema()))
 
-	rows, err := db.pool.Query(ctx, `SELECT DISTINCT id, brick_class, brick_uri, units, name FROM streams WHERE id = ANY($1)`, q.Ids)
+	rows, err := db.pool.Query(ctx, `SELECT DISTINCT id, brick_class, brick_uri, units, name, source FROM streams WHERE id = ANY($1)`, q.Ids)
 	if err != nil {
 		return err
 	}
@@ -390,7 +392,8 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 		var brick_uri string
 		var unit string
 		var name string
-		if err := rows.Scan(&id, &brick_class, &brick_uri, &unit, &name); err != nil {
+		var source string
+		if err := rows.Scan(&id, &brick_class, &brick_uri, &unit, &name, &source); err != nil {
 			return fmt.Errorf("Could not query: %w", err)
 		}
 		classes.Append(brick_class)
@@ -398,6 +401,7 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 		units.Append(unit)
 		names.Append(name)
 		ids.Append(id)
+		sources.Append(source)
 	}
 
 	mdrec := mdbldr.NewRecord()
