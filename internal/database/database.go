@@ -549,22 +549,22 @@ func (db *TimescaleDatabase) AddTriples(ctx context.Context, ds TripleDataset) e
 	err := db.RunAsTransaction(ctx, func(txn pgx.Tx) error {
 		_, err := txn.Exec(ctx, "CREATE TEMP TABLE triplet(source TEXT, origin TEXT, time TIMESTAMPTZ, s TEXT, p TEXT, o TEXT)")
 		if err != nil {
-			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+			return fmt.Errorf("Cannot insert triples for source %s: %w (temp create)", ds.GetSource(), err)
 		}
 
 		num, err = txn.CopyFrom(ctx, pgx.Identifier{"triplet"}, []string{"source", "origin", "time", "s", "p", "o"}, ds)
 		if err != nil {
-			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+			return fmt.Errorf("Cannot insert triples for source %s: %w (temp insert)", ds.GetSource(), err)
 		}
 
 		_, err = txn.Exec(ctx, "INSERT INTO triples SELECT * FROM triplet ON CONFLICT (source, origin, time, s, p, o) DO NOTHING")
 		if err != nil {
-			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+			return fmt.Errorf("Cannot insert triples for source %s: %w (copy over)", ds.GetSource(), err)
 		}
 
 		_, err = txn.Exec(ctx, "DROP TABLE triplet")
 		if err != nil {
-			return fmt.Errorf("Cannot insert triples for source %s: %w", ds.GetSource(), err)
+			return fmt.Errorf("Cannot insert triples for source %s: %w (drop temp)", ds.GetSource(), err)
 		}
 
 		return nil

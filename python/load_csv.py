@@ -49,8 +49,8 @@ with open(sys.argv[1], 'r') as f:
                 registered = True
             w.writerow([row['time'], row['value']])
 
-        url = f'http://localhost:5001/insert_streaming?source={source}&\
-name={name}&brick_uri={uri}&units={units}&brick_class={btype}'
+        url = f'http://localhost:5001/insert/csv?source={source}&\
+name={name}&brick_uri={uri}&units={units}&brick_class={btype}&apikey=f7851e93-5717-4921-a978-26c5c550e0a5'
 
         print(url)
         b = io.BytesIO(buf.getvalue().encode('utf8'))
