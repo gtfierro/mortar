@@ -59,11 +59,11 @@ services:
     image: "mortar/reasoner"
     restart: always
     environment:
-      - MORTAR_DB_HOST=d75nh18ux1.g8dk8eknf4.tsdb.forge.timescale.com
-      - MORTAR_DB_PORT=32735
-      - MORTAR_DB_DATABASE=tsdb
-      - MORTAR_DB_USER=tsdbadmin
-      - MORTAR_DB_PASSWORD=dv3cufbfmhs2c6gl
+      - MORTAR_DB_HOST=pg
+      - MORTAR_DB_PORT=5432
+      - MORTAR_DB_DATABASE=mortar
+      - MORTAR_DB_USER=mortarchangeme
+      - MORTAR_DB_PASSWORD=mortarpasswordchangeme
     ports:
       - "3031"
     depends_on:
