@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -705,12 +707,11 @@ func (db *TimescaleDatabase) GetGraph(ctx context.Context, req *ModelRequest, w 
 			log.Error(err)
 			return err
 		}
-		fmt.Println(s, p, o)
-
-		if a == 28269 {
-			fmt.Println(s, p, o)
+		fstring := "%s %s %s .\n"
+		if strings.HasPrefix(o, "\"") {
+			o = strconv.Quote(o)
 		}
-		if _, err := fmt.Fprintf(triplesBuffer, "%s %s %s .\n", s, p, o); err != nil {
+		if _, err := fmt.Fprintf(triplesBuffer, fstring, s, p, o); err != nil {
 			err = fmt.Errorf("Could not write row into decoder: %s", err)
 			log.Error(err)
 			return err
