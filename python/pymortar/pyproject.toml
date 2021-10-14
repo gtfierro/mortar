@@ -5,7 +5,7 @@ description = ""
 authors = ["Gabe Fierro <gtfierro@cs.berkeley.edu>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7.1"
 rdflib = "^6.0"
 requests = "^2.25.0"
 pyarrow = "^5.0"
