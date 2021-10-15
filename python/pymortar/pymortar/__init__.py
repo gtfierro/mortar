@@ -13,6 +13,7 @@ from datetime import datetime
 import requests
 from requests.utils import quote
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
+from rdflib.plugins.sparql.results.jsonresults import JSONResultParser
 import rdflib
 import pyarrow as pa
 import pandas as pd
@@ -189,8 +190,9 @@ class Client:
             )
         dfs = []
         for site in sites:
-            ep = SPARQLStore(f"{self._endpoint}/sparql?site={site}")
-            res = ep.query(query)
+            ep = f"{self._endpoint}/sparql"
+            res = requests.get(ep, params={'site': site, 'query': query})
+            res = JSONResultParser().parse(io.BytesIO(res.content))
             df = pd.DataFrame.from_records(
                 list(res), columns=[str(c) for c in res.vars]
             )
@@ -198,6 +200,8 @@ class Client:
             dfs.append(df)
         if len(dfs) == 0:
             return pd.DataFrame()
+        if len(dfs) == 1:
+            return dfs[0]
         return functools.reduce(lambda x, y: pd.concat([x, y], axis=0), dfs)
 
     # def get_data_ids(self, ids, source=None, start=None, end=None):
@@ -250,7 +254,7 @@ class Client:
         return Dataset(None, md, df)
 
     def data_sparql(
-        self, sparql, source=None, start=None, end=None, agg=None, window=None
+        self, sparql, start=None, end=None, agg=None, window=None, sites=None, memsize=4e10
     ):
         params = {"sparql": sparql}
         if agg is not None and window is not None:
@@ -272,10 +276,10 @@ class Client:
         else:
             params["end"] = "2100-01-01T00:00:00Z"
 
-        if source is not None:
-            params["source"] = source
+        if sites is not None:
+            params["sites"] = sites
 
-        metadata = self.sparql(sparql, sites=[source] if source is not None else None)
+        metadata = self.sparql(sparql, sites=sites)
 
         resp = requests.get(f"{self._endpoint}/query", params=params)
         if not resp.ok:
@@ -283,7 +287,7 @@ class Client:
             raise Exception(resp.content)
         # print(len(resp.content))
 
-        buf = pa.decompress(resp.content, decompressed_size=4e10, codec='lz4', asbytes=True)
+        buf = pa.decompress(resp.content, decompressed_size=memsize, codec='lz4', asbytes=True)
         buf = io.BytesIO(buf)
         # # before: no compression
         # buf = io.BytesIO(resp.content)
