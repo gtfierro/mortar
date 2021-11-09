@@ -26,3 +26,9 @@ Beta documentation here: https://beta.mortardata.org/intro.html
 
 - install [`kompose`](https://github.com/kubernetes/kompose)
 - run `kompose convert -f docker-compose.yml -o k8s`
+
+## Running Examples
+In order to query and write to the Postgres database, you must create and authorize a new API key.
+`$ docker exec -ti mortar_pg_1 psql mortar -U <username>`
+`mortar=# SELECT new_apikey();`
+`mortar=# SELECT authorize_write('<your_new_apikey>', '<sitename>');`
