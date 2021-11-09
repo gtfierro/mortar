@@ -43,7 +43,7 @@ services:
     depends_on:
       - cadvisor
   cadvisor:
-    image: google/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor
     restart: always
     ports:
       - "127.0.0.1:8080:8080"
