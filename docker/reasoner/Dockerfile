@@ -1,4 +1,4 @@
-FROM rust:1.53.0 AS builder
+FROM rust:1.59.0 AS builder
 WORKDIR /app
 
 COPY reasoner .
