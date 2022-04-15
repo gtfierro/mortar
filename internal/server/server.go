@@ -248,6 +248,7 @@ func (srv *Server) readDataChunk(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: is there a (standard) way to communicate errors over the Arrow IPC
 	// mechanism rather than falling back to an HTTP status code?
+	log.Infof("Read data chunk %+v", query)
 	err := srv.db.ReadDataChunk(ctx, w, &query)
 	if err != nil {
 		log.Errorf("Problem querying data: %s", err)
@@ -294,8 +295,10 @@ func (srv *Server) serveSPARQLQuery(w http.ResponseWriter, r *http.Request) {
 
 	// check query parameters
 	// get first 'site'
-	site := r.URL.Query().Get("site")
-	if queryString := r.URL.Query().Get("query"); len(queryString) > 0 {
+	q := r.URL.Query()
+	log.Infof("Query: %+v", q)
+	site := q.Get("site")
+	if queryString := q.Get("query"); len(queryString) > 0 {
 		sparqlQuery = []byte(queryString)
 	} else if sparqlQuery, err = ioutil.ReadAll(r.Body); err != nil {
 		rerr := fmt.Errorf("Bad SPARQL query: %w", err)

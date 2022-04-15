@@ -371,7 +371,7 @@ func (q *Query) FromURLParams(vals url.Values) error {
 		q.AggregationWindow = &window
 	}
 
-	q.Sources = vals["source"]
+	q.Sources = vals["sites"]
 
 	return nil
 }

@@ -307,32 +307,41 @@ func (db *TimescaleDatabase) writeMetadataArrow(ctx context.Context, w io.Writer
 	// implied by the query, and use those to determine the ids in the 'data' table
 	var err error
 
+	log := logging.FromContext(ctx)
 	if len(q.Sparql) > 0 {
-		fmt.Println("SPARQL", q.Sparql)
+		fmt.Println("SPARQL", q.Sparql, q.Sources)
 		// TODO: get all graphs
 		var uris []string
-		res, err := db.QuerySparql(ctx, "default", q.Sparql)
-		if err != nil {
-			return err
+		if len(q.Sources) == 0 {
+			q.Sources = []string{"default"}
 		}
 
-		fmt.Println("results", len(res.Results.Bindings))
-		for _, row := range res.Results.Bindings {
-			for _, value := range row {
-				if value.Type == "uri" {
-					uris = append(uris, value.Value)
+		for _, site := range q.Sources {
+			res, err := db.QuerySparql(ctx, site, q.Sparql)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("results", len(res.Results.Bindings))
+			for _, row := range res.Results.Bindings {
+				for _, value := range row {
+					if value.Type == "uri" {
+						uris = append(uris, value.Value)
+					}
 				}
 			}
 		}
 		fmt.Println("metadata uris", len(uris))
 		// get ids from the uris
 		var rows pgx.Rows
-		if len(q.Sources) > 0 {
+		if len(q.Sources) > 0 && q.Sources[0] != "default" {
 			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1)) AND source = ANY($2)`, uris, q.Sources)
 		} else {
 			rows, err = db.pool.Query(ctx, `SELECT id from streams WHERE (name = ANY($1) OR brick_uri = ANY($1))`, uris)
+			//rows, err = db.pool.Query(ctx, `SELECT id from streams LIMIT 10`)
 		}
 		if err != nil {
+			log.Errorf("could not query? %w", err)
 			return err
 		}
 		for rows.Next() {
@@ -722,11 +731,11 @@ func (db *TimescaleDatabase) GetGraph(ctx context.Context, req *ModelRequest, w 
 	i := 0
 	for triple, err := dec.Decode(); err != io.EOF; triple, err = dec.Decode() {
 		if err != nil {
-			err = fmt.Errorf("Could not decode triple from database (%d): %s", i, err)
+			err = fmt.Errorf("(graph %s) Could not decode triple for graph from database (%d): %s", req.Graph, i, err)
 			log.Error(err)
 			return err
 		} else if err := enc.Encode(triple); err != nil {
-			err = fmt.Errorf("Could not encode triple %s from database: %s", triple, err)
+			err = fmt.Errorf("(graph %s) Could not encode triple %s from database: %s", req.Graph, triple, err)
 			log.Error(err)
 			return err
 		}
